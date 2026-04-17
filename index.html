@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guitar Modes — Shape Visualizer</title>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --panel: #242424;
+    --fret: #3a3a3a;
+    --string: #8a8a8a;
+    --wood: #2d2420;
+    --text: #e8e8e8;
+    --muted: #888;
+    --root: #e74c3c;
+    --note: #3498db;
+    --accent: #f39c12;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 {
+    margin: 0 0 8px 0;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  .mode-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .mode-btn {
+    padding: 10px 16px;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid #333;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .mode-btn:hover {
+    background: #2f2f2f;
+    border-color: #555;
+  }
+  .mode-btn.active {
+    background: var(--accent);
+    color: #1a1a1a;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+  .mode-info {
+    background: var(--panel);
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 3px solid var(--accent);
+  }
+  .mode-info .name {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .mode-info .formula {
+    color: var(--muted);
+    font-size: 14px;
+    font-family: "SF Mono", Menlo, monospace;
+    letter-spacing: 1px;
+  }
+  .mode-info .character {
+    color: #bbb;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+  .fretboards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  @media (min-width: 900px) {
+    .fretboards { grid-template-columns: 1fr 1fr; }
+  }
+  .fretboard-container {
+    background: var(--panel);
+    padding: 18px;
+    border-radius: 8px;
+  }
+  .fretboard-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .fretboard-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  svg.fretboard {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .fret-line { stroke: var(--fret); stroke-width: 2; }
+  .nut { stroke: #ddd; stroke-width: 4; }
+  .string-line { stroke: var(--string); stroke-width: 1.5; }
+  .string-line.thick { stroke-width: 2.5; }
+  .fret-num { fill: var(--muted); font-size: 11px; font-family: sans-serif; text-anchor: middle; }
+  .string-label { fill: var(--muted); font-size: 11px; font-family: sans-serif; text-anchor: end; }
+  .inlay { fill: #555; }
+  .note-circle { stroke: #fff; stroke-width: 1.5; }
+  .note-circle.root { fill: var(--root); }
+  .note-circle.scale { fill: var(--note); }
+  .note-label { fill: #fff; font-size: 11px; font-weight: 700; font-family: sans-serif; text-anchor: middle; dominant-baseline: central; }
+  .legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #fff; }
+</style>
+</head>
+<body>
+<h1>Guitar Modes — Shape Visualizer</h1>
+<div class="subtitle">Notes labeled by scale degree. Root note is abstract — these shapes apply at any fret position.</div>
+<div class="mode-selector" id="modeSelector"></div>
+<div class="mode-info" id="modeInfo"></div>
+<div class="fretboards">
+  <div class="fretboard-container">
+    <div class="fretboard-title">3 Notes Per String</div>
+    <div class="fretboard-desc">Three notes on every string — great for legato, sequences, and shred.</div>
+    <svg class="fretboard" id="fretboard3nps" viewBox="0 0 640 220"></svg>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background: var(--root)"></div>Root (1)</div>
+      <div class="legend-item"><div class="legend-dot" style="background: var(--note)"></div>Scale tone</div>
+    </div>
+  </div>
+  <div class="fretboard-container">
+    <div class="fretboard-title">Standard (CAGED) Shape</div>
+    <div class="fretboard-desc">Positional box shape — two or three notes per string, fits the hand naturally.</div>
+    <svg class="fretboard" id="fretboardCaged" viewBox="0 0 640 220"></svg>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background: var(--root)"></div>Root (1)</div>
+      <div class="legend-item"><div class="legend-dot" style="background: var(--note)"></div>Scale tone</div>
+    </div>
+  </div>
+</div>
+<script>
+// Modes: each has a formula (intervals in semitones from root) and degree labels.
+// Degree labels use the major-scale reference: 1 2 3 4 5 6 7, with b/# for modal alterations.
+const MODES = {
+  ionian:     { name: "Ionian (Major)",    intervals: [0,2,4,5,7,9,11],  degrees: ["1","2","3","4","5","6","7"],      character: "Bright, resolved, happy. The major scale." },
+  dorian:     { name: "Dorian",            intervals: [0,2,3,5,7,9,10],  degrees: ["1","2","b3","4","5","6","b7"],    character: "Minor with a raised 6th. Jazzy, funky, soulful." },
+  phrygian:   { name: "Phrygian",          intervals: [0,1,3,5,7,8,10],  degrees: ["1","b2","b3","4","5","b6","b7"],  character: "Dark, Spanish/flamenco flavor from the b2." },
+  lydian:     { name: "Lydian",            intervals: [0,2,4,6,7,9,11],  degrees: ["1","2","3","#4","5","6","7"],     character: "Bright and floating — major with a raised 4th." },
+  mixolydian: { name: "Mixolydian",        intervals: [0,2,4,5,7,9,10],  degrees: ["1","2","3","4","5","6","b7"],     character: "Major with a b7. Bluesy, dominant, rock." },
+  aeolian:    { name: "Aeolian (Natural Minor)", intervals: [0,2,3,5,7,8,10], degrees: ["1","2","b3","4","5","b6","b7"], character: "The natural minor scale. Sad, melancholic." },
+  locrian:    { name: "Locrian",           intervals: [0,1,3,5,6,8,10],  degrees: ["1","b2","b3","4","b5","b6","b7"], character: "Diminished and unstable — the b5 defines it." }
+};
+// Standard tuning, low to high, in semitones (E2=0 reference).
+// String 6 (low E) to string 1 (high E). We'll draw string 6 at top.
+// Pitches relative to low E = 0: E=0, A=5, D=10, G=15, B=19, E=24
+const STRING_PITCHES = [0, 5, 10, 15, 19, 24]; // index 0 = low E (6th string)
+const STRING_LABELS = ["E", "A", "D", "G", "B", "E"]; // low to high
+// We'll place shapes relative to a "root fret" on the low E string.
+// Using fret 5 as the root fret (so low E string root = A). Fret number is arbitrary for shape purposes;
+// we display frets relative (the first fret shown is labeled as position marker).
+// Build shape for 3 notes per string:
+// For each string, find the three consecutive scale tones starting at or just after the lowest playable fret that gives continuity.
+// Standard approach: start from root on low E, play 3 notes on each string ascending.
+function build3NPS(modeKey, rootFret = 5) {
+  const mode = MODES[modeKey];
+  // Build pitch set: all scale pitches across many octaves (semitone value mod 12 in scale)
+  const scaleSet = new Set(mode.intervals);
+  // Degree lookup by semitone-from-root mod 12
+  const degreeByPc = {};
+  mode.intervals.forEach((iv, i) => { degreeByPc[iv] = mode.degrees[i]; });
+  // Root absolute pitch: on low E string at rootFret
+  const rootPitch = STRING_PITCHES[0] + rootFret;
+  // For each string (0..5 = low to high), we need to pick 3 notes.
+  // Classic 3NPS: starting from the root on string 0, walk up scale degrees, 3 per string.
+  // Scale sequence (ascending pitches from root):
+  const ascScale = [];
+  for (let oct = 0; oct < 4; oct++) {
+    mode.intervals.forEach(iv => ascScale.push(iv + 12 * oct));
+  }
+  // Note index in scale we're currently on
+  let scaleIdx = 0;
+  const notes = []; // {string, fret, degree, isRoot}
+  for (let s = 0; s < 6; s++) {
+    for (let n = 0; n < 3; n++) {
+      const absPitch = rootPitch + ascScale[scaleIdx];
+      const fret = absPitch - STRING_PITCHES[s];
+      const pc = ascScale[scaleIdx] % 12;
+      const degree = degreeByPc[pc];
+      const isRoot = (pc === 0);
+      notes.push({ string: s, fret, degree, isRoot });
+      scaleIdx++;
+    }
+  }
+  return notes;
+}
+// Build a CAGED-style positional shape: span roughly 4-5 frets, natural hand position.
+// Approach: starting from the root on low E at rootFret, pick all scale tones within
+// the window [rootFret-1, rootFret+3] (i.e., 5-fret span), then relax: use index finger
+// at rootFret up through pinky at rootFret+3, with occasional reach down 1 fret.
+function buildCAGED(modeKey, rootFret = 5) {
+  const mode = MODES[modeKey];
+  const degreeByPc = {};
+  mode.intervals.forEach((iv, i) => { degreeByPc[iv] = mode.degrees[i]; });
+  const scalePcs = new Set(mode.intervals);
+  const rootPitch = STRING_PITCHES[0] + rootFret;
+  const minFret = rootFret - 1;
+  const maxFret = rootFret + 3;
+  const notes = [];
+  for (let s = 0; s < 6; s++) {
+    for (let f = minFret; f <= maxFret; f++) {
+      const absPitch = STRING_PITCHES[s] + f;
+      const semiFromRoot = ((absPitch - rootPitch) % 12 + 12) % 12;
+      if (scalePcs.has(semiFromRoot)) {
+        notes.push({
+          string: s,
+          fret: f,
+          degree: degreeByPc[semiFromRoot],
+          isRoot: semiFromRoot === 0
+        });
+      }
+    }
+  }
+  return notes;
+}
+// Render a fretboard given a set of notes.
+// Layout: 6 strings stacked (string 6 low E at TOP — guitar convention when viewed from player perspective is reversed,
+// but standard chord-diagram / scale-diagram convention is low E at BOTTOM. We'll use low E at BOTTOM to match common diagrams.)
+function renderFretboard(svgId, notes, rootFret) {
+  const svg = document.getElementById(svgId);
+  svg.innerHTML = "";
+  // Determine fret range
+  const frets = notes.map(n => n.fret);
+  const minF = Math.min(...frets);
+  const maxF = Math.max(...frets);
+  const startFret = Math.max(0, minF - 1);
+  const endFret = maxF + 1;
+  const numFrets = endFret - startFret;
+  const W = 640, H = 220;
+  const padL = 40, padR = 20, padT = 30, padB = 30;
+  const boardW = W - padL - padR;
+  const boardH = H - padT - padB;
+  const fretW = boardW / numFrets;
+  const stringSpacing = boardH / 5;
+  const ns = "http://www.w3.org/2000/svg";
+  // Board background
+  const bg = document.createElementNS(ns, "rect");
+  bg.setAttribute("x", padL);
+  bg.setAttribute("y", padT);
+  bg.setAttribute("width", boardW);
+  bg.setAttribute("height", boardH);
+  bg.setAttribute("fill", "#2d2420");
+  bg.setAttribute("rx", "3");
+  svg.appendChild(bg);
+  // Fret lines
+  for (let i = 0; i <= numFrets; i++) {
+    const x = padL + i * fretW;
+    const line = document.createElementNS(ns, "line");
+    line.setAttribute("x1", x);
+    line.setAttribute("x2", x);
+    line.setAttribute("y1", padT);
+    line.setAttribute("y2", padT + boardH);
+    line.setAttribute("class", (startFret + i === 0 && i === 0) ? "nut" : "fret-line");
+    svg.appendChild(line);
+  }
+  // Fret numbers (show at top, between frets)
+  for (let i = 0; i < numFrets; i++) {
+    const fretNum = startFret + i + 1;
+    const x = padL + i * fretW + fretW / 2;
+    const t = document.createElementNS(ns, "text");
+    t.setAttribute("x", x);
+    t.setAttribute("y", padT - 10);
+    t.setAttribute("class", "fret-num");
+    t.textContent = fretNum;
+    svg.appendChild(t);
+    // Inlay dots at common frets (3, 5, 7, 9, 12, 15, 17, 19, 21)
+    const inlayFrets = [3, 5, 7, 9, 15, 17, 19, 21];
+    if (inlayFrets.includes(fretNum)) {
+      const dot = document.createElementNS(ns, "circle");
+      dot.setAttribute("cx", x);
+      dot.setAttribute("cy", padT + boardH + 15);
+      dot.setAttribute("r", 3);
+      dot.setAttribute("class", "inlay");
+      svg.appendChild(dot);
+    }
+    if (fretNum === 12 || fretNum === 24) {
+      const d1 = document.createElementNS(ns, "circle");
+      d1.setAttribute("cx", x - 5);
+      d1.setAttribute("cy", padT + boardH + 15);
+      d1.setAttribute("r", 3);
+      d1.setAttribute("class", "inlay");
+      svg.appendChild(d1);
+      const d2 = document.createElementNS(ns, "circle");
+      d2.setAttribute("cx", x + 5);
+      d2.setAttribute("cy", padT + boardH + 15);
+      d2.setAttribute("r", 3);
+      d2.setAttribute("class", "inlay");
+      svg.appendChild(d2);
+    }
+  }
+  // Strings (low E at bottom = string index 0, high E at top = string index 5)
+  // In SVG y, higher y = lower on screen. We want string 0 (low E) at the bottom -> largest y.
+  // So y for string s = padT + (5 - s) * stringSpacing
+  for (let s = 0; s < 6; s++) {
+    const y = padT + (5 - s) * stringSpacing;
+    const line = document.createElementNS(ns, "line");
+    line.setAttribute("x1", padL);
+    line.setAttribute("x2", padL + boardW);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("class", s < 3 ? "string-line thick" : "string-line");
+    svg.appendChild(line);
+    // String label
+    const lbl = document.createElementNS(ns, "text");
+    lbl.setAttribute("x", padL - 8);
+    lbl.setAttribute("y", y + 4);
+    lbl.setAttribute("class", "string-label");
+    lbl.textContent = STRING_LABELS[s];
+    svg.appendChild(lbl);
+  }
+  // Notes
+  notes.forEach(n => {
+    const fretIdx = n.fret - startFret;
+    // Place note at center of the fret (between fret lines)
+    const cx = padL + (fretIdx - 0.5) * fretW + fretW * 0.5;
+    // Actually: note sits between fret (n.fret-1) and fret n.fret. In our drawing, fret k occupies
+    // the space from (k - startFret - 1)*fretW to (k - startFret)*fretW from padL. So center:
+    const noteX = padL + (n.fret - startFret - 0.5) * fretW;
+    const y = padT + (5 - n.string) * stringSpacing;
+    const circle = document.createElementNS(ns, "circle");
+    circle.setAttribute("cx", noteX);
+    circle.setAttribute("cy", y);
+    circle.setAttribute("r", 13);
+    circle.setAttribute("class", "note-circle " + (n.isRoot ? "root" : "scale"));
+    svg.appendChild(circle);
+    const label = document.createElementNS(ns, "text");
+    label.setAttribute("x", noteX);
+    label.setAttribute("y", y);
+    label.setAttribute("class", "note-label");
+    label.textContent = n.degree;
+    svg.appendChild(label);
+  });
+}
+// Build the UI
+const modeSelector = document.getElementById("modeSelector");
+const modeInfo = document.getElementById("modeInfo");
+Object.keys(MODES).forEach((key, i) => {
+  const btn = document.createElement("button");
+  btn.className = "mode-btn" + (i === 0 ? " active" : "");
+  btn.textContent = MODES[key].name.split(" ")[0];
+  btn.dataset.mode = key;
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    showMode(key);
+  });
+  modeSelector.appendChild(btn);
+});
+function showMode(key) {
+  const m = MODES[key];
+  modeInfo.innerHTML = `
+    <div class="name">${m.name}</div>
+    <div class="formula">${m.degrees.join(" — ")}</div>
+    <div class="character">${m.character}</div>
+  `;
+  const rootFret = 5;
+  renderFretboard("fretboard3nps", build3NPS(key, rootFret), rootFret);
+  renderFretboard("fretboardCaged", buildCAGED(key, rootFret), rootFret);
+}
+showMode("ionian");
+</script>
+</body>
+</html>
