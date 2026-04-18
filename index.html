@@ -473,8 +473,8 @@ function playScale(modeKey) {
 
   // Build scale: intervals + octave (root repeated at top)
   const intervals = [...mode.intervals, 12];
-  const noteSpacing = 0.25;  // time between note onsets — tight for legato
-  const noteSustain = 0.55;  // shorter tail so less wash/overlap
+  const noteSpacing = 0.35;  // time between note onsets
+  const noteSustain = 0.34;  // just under spacing so notes don't overlap
   const now = ctx.currentTime + 0.05;
 
   isPlaying = true;
