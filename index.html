@@ -132,6 +132,42 @@
   }
   .legend-item { display: flex; align-items: center; gap: 6px; }
   .legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #fff; }
+  .play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 18px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .play-btn:hover { background: rgba(243,156,18,0.12); }
+  .play-btn:disabled { opacity: 0.4; cursor: default; }
+  .play-btn .icon { font-size: 16px; }
+  .key-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    margin-left: 12px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .key-selector select {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -376,12 +412,111 @@ Object.keys(MODES).forEach((key, i) => {
   });
   modeSelector.appendChild(btn);
 });
+// ── Web Audio: guitar-like tone synthesis ──
+let audioCtx = null;
+let isPlaying = false;
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// Play a single note with a plucked-string timbre (Karplus-Strong-ish via harmonics + fast decay)
+function playNote(ctx, freq, startTime, duration) {
+  // Main oscillator + harmonics for a richer guitar-like sound
+  const masterGain = ctx.createGain();
+  masterGain.connect(ctx.destination);
+  masterGain.gain.setValueAtTime(0.0001, startTime);
+  masterGain.gain.exponentialRampToValueAtTime(0.35, startTime + 0.01);
+  masterGain.gain.exponentialRampToValueAtTime(0.18, startTime + duration * 0.3);
+  masterGain.gain.exponentialRampToValueAtTime(0.005, startTime + duration);
+
+  // Fundamental
+  const osc1 = ctx.createOscillator();
+  osc1.type = "triangle";
+  osc1.frequency.value = freq;
+
+  // 2nd harmonic (softer)
+  const osc2 = ctx.createOscillator();
+  osc2.type = "sine";
+  osc2.frequency.value = freq * 2;
+  const g2 = ctx.createGain();
+  g2.gain.value = 0.15;
+
+  // 3rd harmonic (very soft)
+  const osc3 = ctx.createOscillator();
+  osc3.type = "sine";
+  osc3.frequency.value = freq * 3;
+  const g3 = ctx.createGain();
+  g3.gain.value = 0.06;
+
+  osc1.connect(masterGain);
+  osc2.connect(g2).connect(masterGain);
+  osc3.connect(g3).connect(masterGain);
+
+  osc1.start(startTime);
+  osc2.start(startTime);
+  osc3.start(startTime);
+  osc1.stop(startTime + duration + 0.05);
+  osc2.stop(startTime + duration + 0.05);
+  osc3.stop(startTime + duration + 0.05);
+}
+
+function playScale(modeKey) {
+  if (isPlaying) return;
+  const ctx = getAudioCtx();
+  const mode = MODES[modeKey];
+  const rootSelect = document.getElementById("rootKeySelect");
+  const rootMidi = parseInt(rootSelect.value); // MIDI note number
+  const rootFreq = 440 * Math.pow(2, (rootMidi - 69) / 12); // A4 = 69
+
+  // Build scale: intervals + octave (root repeated at top)
+  const intervals = [...mode.intervals, 12];
+  const noteDuration = 0.45;
+  const now = ctx.currentTime + 0.05;
+
+  isPlaying = true;
+  const btn = document.getElementById("playBtn");
+  btn.disabled = true;
+  btn.querySelector(".icon").textContent = "\u266B";
+
+  intervals.forEach((semitones, i) => {
+    const freq = rootFreq * Math.pow(2, semitones / 12);
+    playNote(ctx, freq, now + i * noteDuration, noteDuration * 1.1);
+  });
+
+  // Re-enable after playback finishes
+  const totalTime = intervals.length * noteDuration * 1000 + 200;
+  setTimeout(() => {
+    isPlaying = false;
+    btn.disabled = false;
+    btn.querySelector(".icon").textContent = "\u25B6";
+  }, totalTime);
+}
+
+// Current mode tracking
+let currentMode = "ionian";
+
 function showMode(key) {
+  currentMode = key;
   const m = MODES[key];
+  const keyOptions = NOTE_NAMES.map((name, i) => {
+    const midi = 52 + i; // E3 = 52 up to D#4
+    const selected = (midi === 57) ? "selected" : ""; // default A3
+    return `<option value="${midi}" ${selected}>${name}</option>`;
+  }).join("");
   modeInfo.innerHTML = `
     <div class="name">${m.name}</div>
     <div class="formula">${m.degrees.join(" — ")}</div>
     <div class="character">${m.character}</div>
+    <button class="play-btn" id="playBtn" onclick="playScale('${key}')">
+      <span class="icon">&#9654;</span> Play Scale
+    </button>
+    <span class="key-selector">
+      Root:
+      <select id="rootKeySelect">${keyOptions}</select>
+    </span>
   `;
   const rootFret = 5;
   renderFretboard("fretboard3nps", build3NPS(key, rootFret), rootFret);
