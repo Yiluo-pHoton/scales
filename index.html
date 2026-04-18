@@ -501,8 +501,8 @@ function playScale(modeKey) {
 
   // Build scale: intervals + octave (root repeated at top)
   const intervals = [...mode.intervals, 12];
-  const noteSpacing = 0.30;  // time between note onsets
-  const noteSustain = 0.28;  // ends just before next note — dry, minimal gap
+  const noteSpacing = 0.6;   // 0.5s note + 0.1s gap
+  const noteSustain = 0.5;   // each note rings for 0.5s
   const now = ctx.currentTime + 0.05;
 
   isPlaying = true;
