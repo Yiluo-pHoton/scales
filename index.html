@@ -442,14 +442,14 @@ function playNote(ctx, freq, startTime, duration) {
   osc2.type = "sine";
   osc2.frequency.value = freq * 2;
   const g2 = ctx.createGain();
-  g2.gain.value = 0.15;
+  g2.gain.value = 0.08;
 
   // 3rd harmonic (very soft)
   const osc3 = ctx.createOscillator();
   osc3.type = "sine";
   osc3.frequency.value = freq * 3;
   const g3 = ctx.createGain();
-  g3.gain.value = 0.06;
+  g3.gain.value = 0.03;
 
   osc1.connect(masterGain);
   osc2.connect(g2).connect(masterGain);
@@ -474,7 +474,7 @@ function playScale(modeKey) {
   // Build scale: intervals + octave (root repeated at top)
   const intervals = [...mode.intervals, 12];
   const noteSpacing = 0.25;  // time between note onsets — tight for legato
-  const noteSustain = 1.1;   // long ring so notes overlap and blend
+  const noteSustain = 0.55;  // shorter tail so less wash/overlap
   const now = ctx.currentTime + 0.05;
 
   isPlaying = true;
