@@ -473,7 +473,8 @@ function playScale(modeKey) {
 
   // Build scale: intervals + octave (root repeated at top)
   const intervals = [...mode.intervals, 12];
-  const noteDuration = 0.65;
+  const noteSpacing = 0.38;  // time between note onsets (shorter = less gap)
+  const noteSustain = 0.9;   // how long each note rings (longer = more overlap/legato)
   const now = ctx.currentTime + 0.05;
 
   isPlaying = true;
@@ -483,11 +484,11 @@ function playScale(modeKey) {
 
   intervals.forEach((semitones, i) => {
     const freq = rootFreq * Math.pow(2, semitones / 12);
-    playNote(ctx, freq, now + i * noteDuration, noteDuration * 1.1);
+    playNote(ctx, freq, now + i * noteSpacing, noteSustain);
   });
 
   // Re-enable after playback finishes
-  const totalTime = intervals.length * noteDuration * 1000 + 200;
+  const totalTime = intervals.length * noteSpacing * 1000 + noteSustain * 1000 + 200;
   setTimeout(() => {
     isPlaying = false;
     btn.disabled = false;
