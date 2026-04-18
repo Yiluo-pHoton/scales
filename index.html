@@ -319,41 +319,7 @@ function renderFretboard(svgId, notes, rootFret) {
     line.setAttribute("class", (startFret + i === 0 && i === 0) ? "nut" : "fret-line");
     svg.appendChild(line);
   }
-  // Fret numbers (show at top, between frets)
-  for (let i = 0; i < numFrets; i++) {
-    const fretNum = startFret + i + 1;
-    const x = padL + i * fretW + fretW / 2;
-    const t = document.createElementNS(ns, "text");
-    t.setAttribute("x", x);
-    t.setAttribute("y", padT - 10);
-    t.setAttribute("class", "fret-num");
-    t.textContent = fretNum;
-    svg.appendChild(t);
-    // Inlay dots at common frets (3, 5, 7, 9, 12, 15, 17, 19, 21)
-    const inlayFrets = [3, 5, 7, 9, 15, 17, 19, 21];
-    if (inlayFrets.includes(fretNum)) {
-      const dot = document.createElementNS(ns, "circle");
-      dot.setAttribute("cx", x);
-      dot.setAttribute("cy", padT + boardH + 15);
-      dot.setAttribute("r", 3);
-      dot.setAttribute("class", "inlay");
-      svg.appendChild(dot);
-    }
-    if (fretNum === 12 || fretNum === 24) {
-      const d1 = document.createElementNS(ns, "circle");
-      d1.setAttribute("cx", x - 5);
-      d1.setAttribute("cy", padT + boardH + 15);
-      d1.setAttribute("r", 3);
-      d1.setAttribute("class", "inlay");
-      svg.appendChild(d1);
-      const d2 = document.createElementNS(ns, "circle");
-      d2.setAttribute("cx", x + 5);
-      d2.setAttribute("cy", padT + boardH + 15);
-      d2.setAttribute("r", 3);
-      d2.setAttribute("class", "inlay");
-      svg.appendChild(d2);
-    }
-  }
+  // (fret numbers and inlay dots removed for cleaner look)
   // Strings (low E at bottom = string index 0, high E at top = string index 5)
   // In SVG y, higher y = lower on screen. We want string 0 (low E) at the bottom -> largest y.
   // So y for string s = padT + (5 - s) * stringSpacing
