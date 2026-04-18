@@ -428,13 +428,13 @@ function playNote(ctx, freq, startTime, duration) {
   const masterGain = ctx.createGain();
   masterGain.connect(ctx.destination);
   masterGain.gain.setValueAtTime(0.0001, startTime);
-  masterGain.gain.exponentialRampToValueAtTime(0.35, startTime + 0.01);
-  masterGain.gain.exponentialRampToValueAtTime(0.18, startTime + duration * 0.3);
-  masterGain.gain.exponentialRampToValueAtTime(0.005, startTime + duration);
+  masterGain.gain.exponentialRampToValueAtTime(0.32, startTime + 0.08);  // soft attack
+  masterGain.gain.setValueAtTime(0.28, startTime + duration * 0.5);      // hold sustain
+  masterGain.gain.exponentialRampToValueAtTime(0.005, startTime + duration); // gentle release
 
   // Fundamental
   const osc1 = ctx.createOscillator();
-  osc1.type = "triangle";
+  osc1.type = "sine";
   osc1.frequency.value = freq;
 
   // 2nd harmonic (softer)
@@ -473,8 +473,8 @@ function playScale(modeKey) {
 
   // Build scale: intervals + octave (root repeated at top)
   const intervals = [...mode.intervals, 12];
-  const noteSpacing = 0.28;  // time between note onsets (shorter = less gap)
-  const noteSustain = 0.9;   // how long each note rings (longer = more overlap/legato)
+  const noteSpacing = 0.25;  // time between note onsets — tight for legato
+  const noteSustain = 1.1;   // long ring so notes overlap and blend
   const now = ctx.currentTime + 0.05;
 
   isPlaying = true;
