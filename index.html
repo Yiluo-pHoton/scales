@@ -473,7 +473,7 @@ function playScale(modeKey) {
 
   // Build scale: intervals + octave (root repeated at top)
   const intervals = [...mode.intervals, 12];
-  const noteSpacing = 0.38;  // time between note onsets (shorter = less gap)
+  const noteSpacing = 0.28;  // time between note onsets (shorter = less gap)
   const noteSustain = 0.9;   // how long each note rings (longer = more overlap/legato)
   const now = ctx.currentTime + 0.05;
 
