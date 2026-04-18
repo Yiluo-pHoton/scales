@@ -422,45 +422,73 @@ function getAudioCtx() {
   return audioCtx;
 }
 
-// Play a single note with a plucked-string timbre (Karplus-Strong-ish via harmonics + fast decay)
+// Play a single note with a plucked/struck string timbre
 function playNote(ctx, freq, startTime, duration) {
-  // Main oscillator + harmonics for a richer guitar-like sound
+  const end = startTime + duration;
+
+  // Master output
   const masterGain = ctx.createGain();
   masterGain.connect(ctx.destination);
+
+  // Low-pass filter: starts bright, darkens over time (like a real string)
+  const lpf = ctx.createBiquadFilter();
+  lpf.type = "lowpass";
+  lpf.frequency.setValueAtTime(Math.min(freq * 8, 8000), startTime);
+  lpf.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.5, 200), end);
+  lpf.Q.value = 0.7;
+  lpf.connect(masterGain);
+
+  // Amplitude envelope: fast attack, natural decay
   masterGain.gain.setValueAtTime(0.0001, startTime);
-  masterGain.gain.exponentialRampToValueAtTime(0.32, startTime + 0.08);  // soft attack
-  masterGain.gain.setValueAtTime(0.28, startTime + duration * 0.5);      // hold sustain
-  masterGain.gain.exponentialRampToValueAtTime(0.005, startTime + duration); // gentle release
+  masterGain.gain.linearRampToValueAtTime(0.30, startTime + 0.005); // sharp strike
+  masterGain.gain.exponentialRampToValueAtTime(0.15, startTime + 0.04); // quick drop
+  masterGain.gain.exponentialRampToValueAtTime(0.06, startTime + duration * 0.5);
+  masterGain.gain.exponentialRampToValueAtTime(0.003, end);
 
-  // Fundamental
-  const osc1 = ctx.createOscillator();
-  osc1.type = "sine";
-  osc1.frequency.value = freq;
+  // Harmonics with individual decay — higher partials die faster (like a real string)
+  const harmonics = [
+    { mult: 1,   amp: 1.0,   decay: 1.0  },  // fundamental
+    { mult: 2,   amp: 0.45,  decay: 0.8  },  // 2nd
+    { mult: 3,   amp: 0.25,  decay: 0.6  },  // 3rd
+    { mult: 4,   amp: 0.12,  decay: 0.45 },  // 4th
+    { mult: 5,   amp: 0.06,  decay: 0.3  },  // 5th
+    { mult: 6,   amp: 0.03,  decay: 0.2  },  // 6th
+  ];
 
-  // 2nd harmonic (softer)
-  const osc2 = ctx.createOscillator();
-  osc2.type = "sine";
-  osc2.frequency.value = freq * 2;
-  const g2 = ctx.createGain();
-  g2.gain.value = 0.08;
+  harmonics.forEach(h => {
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq * h.mult;
 
-  // 3rd harmonic (very soft)
-  const osc3 = ctx.createOscillator();
-  osc3.type = "sine";
-  osc3.frequency.value = freq * 3;
-  const g3 = ctx.createGain();
-  g3.gain.value = 0.03;
+    const hGain = ctx.createGain();
+    hGain.gain.setValueAtTime(h.amp, startTime);
+    hGain.gain.exponentialRampToValueAtTime(h.amp * 0.01, startTime + duration * h.decay);
 
-  osc1.connect(masterGain);
-  osc2.connect(g2).connect(masterGain);
-  osc3.connect(g3).connect(masterGain);
+    osc.connect(hGain).connect(lpf);
+    osc.start(startTime);
+    osc.stop(end + 0.05);
+  });
 
-  osc1.start(startTime);
-  osc2.start(startTime);
-  osc3.start(startTime);
-  osc1.stop(startTime + duration + 0.05);
-  osc2.stop(startTime + duration + 0.05);
-  osc3.stop(startTime + duration + 0.05);
+  // Pick/hammer transient: short noise burst for realism
+  const bufLen = ctx.sampleRate * 0.015; // 15ms of noise
+  const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+  const data = noiseBuf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * 0.4;
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuf;
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.12, startTime);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.02);
+
+  const noiseLpf = ctx.createBiquadFilter();
+  noiseLpf.type = "bandpass";
+  noiseLpf.frequency.value = freq * 3;
+  noiseLpf.Q.value = 1.5;
+
+  noise.connect(noiseLpf).connect(noiseGain).connect(masterGain);
+  noise.start(startTime);
+  noise.stop(startTime + 0.03);
 }
 
 function playScale(modeKey) {
