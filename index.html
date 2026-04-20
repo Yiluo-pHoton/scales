@@ -368,12 +368,13 @@ const modeSelector = document.getElementById("modeSelector");
 const modeInfo = document.getElementById("modeInfo");
 Object.keys(MODES).forEach((key, i) => {
   const btn = document.createElement("button");
-  btn.className = "mode-btn" + (i === 0 ? " active" : "");
+  btn.className = "mode-btn";
   btn.textContent = MODES[key].name.split(" ")[0];
   btn.dataset.mode = key;
   btn.addEventListener("click", () => {
     document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
+    window.location.hash = key;
     showMode(key);
   });
   modeSelector.appendChild(btn);
@@ -460,6 +461,8 @@ function playNote(ctx, freq, startTime, duration) {
 function playScale(modeKey) {
   if (isPlaying) return;
   const ctx = getAudioCtx();
+  // Resume if browser suspended the AudioContext (e.g. tab was inactive)
+  if (ctx.state === "suspended") { ctx.resume(); }
   const mode = MODES[modeKey];
   const rootSelect = document.getElementById("rootKeySelect");
   const rootMidi = parseInt(rootSelect.value); // MIDI note number
@@ -517,7 +520,14 @@ function showMode(key) {
   renderFretboard("fretboard3nps", build3NPS(key, rootFret), rootFret);
   renderFretboard("fretboardCaged", buildCAGED(key, rootFret), rootFret);
 }
-showMode("ionian");
+// Restore selected mode from URL hash (persists across refresh)
+const hashMode = window.location.hash.slice(1);
+const initialMode = MODES[hashMode] ? hashMode : "ionian";
+showMode(initialMode);
+// Activate the correct button
+document.querySelectorAll(".mode-btn").forEach(b => {
+  b.classList.toggle("active", b.dataset.mode === initialMode);
+});
 </script>
 </body>
 </html>
