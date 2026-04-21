@@ -244,6 +244,20 @@
     font-size: 13px;
     cursor: pointer;
   }
+  .view-toggle {
+    display: inline-block;
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid #444;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .view-toggle:hover { border-color: #666; background: #2f2f2f; }
 </style>
 </head>
 <body>
@@ -251,6 +265,7 @@
 <div class="subtitle">Notes labeled by scale degree. Root note is abstract — these shapes apply at any fret position.</div>
 <div class="mode-selector" id="modeSelector"></div>
 <div class="mode-info" id="modeInfo"></div>
+<button class="view-toggle" id="labelToggle" onclick="toggleLabelMode()">Show Fingering</button>
 <div class="fretboards">
   <div class="fretboard-container">
     <div class="fretboard-title">3 Notes Per String</div>
@@ -347,7 +362,7 @@ function build3NPS(modeKey, rootFret = 5) {
       scaleIdx++;
     }
   }
-  return notes;
+  return assignFingers3NPS(notes);
 }
 // Hardcoded standard box shapes per mode — fret offsets from rootFret for each string.
 // Each sub-array is [low E, A, D, G, B, high E]. Verified against standard scale charts.
@@ -381,7 +396,7 @@ function buildCAGED(modeKey, rootFret = 5) {
       });
     });
   }
-  return notes;
+  return assignFingers(notes);
 }
 // Render a fretboard given a set of notes.
 // Layout: 6 strings stacked (string 6 low E at TOP — guitar convention when viewed from player perspective is reversed,
@@ -463,7 +478,7 @@ function renderFretboard(svgId, notes, rootFret) {
     label.setAttribute("x", noteX);
     label.setAttribute("y", y);
     label.setAttribute("class", "note-label");
-    label.textContent = n.degree;
+    label.textContent = labelMode === "finger" ? n.finger : n.degree;
     svg.appendChild(label);
   });
 }
@@ -595,6 +610,61 @@ function playScale(modeKey) {
     btn.disabled = false;
     btn.querySelector(".icon").textContent = "\u25B6";
   }, totalTime);
+}
+
+// ── Fingering helpers ──
+// Assign finger numbers (1=index, 2=middle, 3=ring, 4=pinky) based on fret position.
+// Works per string: maps fret gaps to finger assignments.
+function assignFingers(notes) {
+  // Group by string
+  const byString = {};
+  notes.forEach(n => {
+    if (!byString[n.string]) byString[n.string] = [];
+    byString[n.string].push(n);
+  });
+  // Find the global hand position (lowest fret across all strings)
+  const allFrets = notes.map(n => n.fret);
+  const positionFret = Math.min(...allFrets); // index finger sits here
+  notes.forEach(n => {
+    const offset = n.fret - positionFret;
+    // offset 0 → 1 (index), 1 → 2 (middle), 2 → 3 (ring), 3 → 4 (pinky)
+    n.finger = Math.min(offset + 1, 4);
+  });
+  return notes;
+}
+
+// For 3NPS the hand shifts per string, so assign fingers per-string independently.
+function assignFingers3NPS(notes) {
+  const byString = {};
+  notes.forEach(n => {
+    if (!byString[n.string]) byString[n.string] = [];
+    byString[n.string].push(n);
+  });
+  for (const s in byString) {
+    const stringNotes = byString[s].sort((a, b) => a.fret - b.fret);
+    const baseFret = stringNotes[0].fret;
+    stringNotes.forEach(n => {
+      const offset = n.fret - baseFret;
+      n.finger = Math.min(offset + 1, 4);
+    });
+  }
+  return notes;
+}
+
+// Label mode: "degree" or "finger"
+let labelMode = "degree";
+
+function toggleLabelMode() {
+  labelMode = labelMode === "degree" ? "finger" : "degree";
+  const btn = document.getElementById("labelToggle");
+  btn.textContent = labelMode === "degree" ? "Show Fingering" : "Show Degrees";
+  refreshFretboards();
+}
+
+function refreshFretboards() {
+  const rootFret = 5;
+  renderFretboard("fretboard3nps", build3NPS(currentMode, rootFret), rootFret);
+  renderFretboard("fretboardCaged", buildCAGED(currentMode, rootFret), rootFret);
 }
 
 // Current mode tracking
