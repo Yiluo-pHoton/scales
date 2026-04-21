@@ -132,6 +132,82 @@
   }
   .legend-item { display: flex; align-items: center; gap: 6px; }
   .legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #fff; }
+
+  /* ── Quiz section ── */
+  .quiz-section {
+    margin-top: 32px;
+    padding-top: 28px;
+    border-top: 1px solid #333;
+  }
+  .quiz-section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+  }
+  .quiz-subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .quiz-card {
+    background: var(--panel);
+    padding: 20px 24px;
+    border-radius: 8px;
+    border-left: 3px solid #9b59b6;
+    margin-bottom: 16px;
+  }
+  .quiz-prompt {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .quiz-detail {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .quiz-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .quiz-btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .quiz-btn.generate {
+    background: #9b59b6;
+    color: #fff;
+    border: 1px solid #9b59b6;
+  }
+  .quiz-btn.generate:hover { background: #8e44ad; }
+  .quiz-btn.play {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .quiz-btn.play:hover { background: rgba(243,156,18,0.12); }
+  .quiz-btn.play:disabled { opacity: 0.4; cursor: default; }
+  .quiz-btn.reveal {
+    background: transparent;
+    color: var(--note);
+    border: 1px solid var(--note);
+  }
+  .quiz-btn.reveal:hover { background: rgba(52,152,219,0.12); }
+  .quiz-answer {
+    margin-top: 16px;
+  }
+  .quiz-answer .answer-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--note);
+    margin-bottom: 10px;
+  }
+
   .play-btn {
     display: inline-flex;
     align-items: center;
@@ -195,6 +271,29 @@
     </div>
   </div>
 </div>
+<!-- Quiz / Practice Section -->
+<div class="quiz-section">
+  <h2>Practice Mode</h2>
+  <div class="quiz-subtitle">Random challenge — test yourself, then check the answer.</div>
+  <div class="quiz-card" id="quizCard">
+    <div class="quiz-prompt" id="quizPrompt">Hit "New Challenge" to start</div>
+    <div class="quiz-detail" id="quizDetail"></div>
+    <div class="quiz-buttons">
+      <button class="quiz-btn generate" id="quizGenerate" onclick="generateQuiz()">New Challenge</button>
+      <button class="quiz-btn play" id="quizPlay" onclick="playQuizScale()" disabled>Play Scale</button>
+      <button class="quiz-btn reveal" id="quizReveal" onclick="revealAnswer()" disabled>Show Answer</button>
+    </div>
+    <div class="quiz-answer" id="quizAnswer" style="display:none;">
+      <div class="answer-label">Answer:</div>
+      <svg class="fretboard" id="fretboardQuiz" viewBox="0 0 640 220"></svg>
+      <div class="legend" style="margin-top:8px;">
+        <div class="legend-item"><div class="legend-dot" style="background: var(--root)"></div>Root (1)</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--note)"></div>Scale tone</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // Modes: each has a formula (intervals in semitones from root) and degree labels.
 // Degree labels use the major-scale reference: 1 2 3 4 5 6 7, with b/# for modal alterations.
@@ -528,6 +627,82 @@ showMode(initialMode);
 document.querySelectorAll(".mode-btn").forEach(b => {
   b.classList.toggle("active", b.dataset.mode === initialMode);
 });
+
+// ── Quiz / Practice Mode ──
+let quizState = null; // { modeKey, rootNote, rootMidi, shape }
+const SHAPE_NAMES = { "3nps": "3 Notes Per String", "standard": "Standard Shape" };
+
+function generateQuiz() {
+  // Pick random mode
+  const modeKeys = Object.keys(MODES);
+  const modeKey = modeKeys[Math.floor(Math.random() * modeKeys.length)];
+
+  // Pick random root note
+  const rootIdx = Math.floor(Math.random() * 12);
+  const rootNote = NOTE_NAMES[rootIdx];
+  const rootMidi = 52 + rootIdx; // E3 range
+
+  // Pick random shape
+  const shape = Math.random() < 0.5 ? "3nps" : "standard";
+
+  quizState = { modeKey, rootNote, rootMidi, shape };
+
+  // Update UI
+  document.getElementById("quizPrompt").textContent =
+    `${rootNote} ${MODES[modeKey].name} — ${SHAPE_NAMES[shape]}`;
+  document.getElementById("quizDetail").textContent =
+    "Play this scale on your guitar, then check your answer.";
+  document.getElementById("quizPlay").disabled = false;
+  document.getElementById("quizReveal").disabled = false;
+  document.getElementById("quizAnswer").style.display = "none";
+}
+
+function playQuizScale() {
+  if (!quizState || isPlaying) return;
+  const ctx = getAudioCtx();
+  if (ctx.state === "suspended") { ctx.resume(); }
+
+  const mode = MODES[quizState.modeKey];
+  const rootFreq = 440 * Math.pow(2, (quizState.rootMidi - 69) / 12);
+
+  const intervals = [...mode.intervals, 12];
+  const noteSpacing = 0.25;
+  const noteSustain = 1.2;
+  const now = ctx.currentTime + 0.05;
+
+  isPlaying = true;
+  const btn = document.getElementById("quizPlay");
+  btn.disabled = true;
+  btn.textContent = "Playing...";
+
+  intervals.forEach((semitones, i) => {
+    const freq = rootFreq * Math.pow(2, semitones / 12);
+    playNote(ctx, freq, now + i * noteSpacing, noteSustain);
+  });
+
+  const totalTime = intervals.length * noteSpacing * 1000 + noteSustain * 1000 + 200;
+  setTimeout(() => {
+    isPlaying = false;
+    btn.disabled = false;
+    btn.textContent = "Play Scale";
+  }, totalTime);
+}
+
+function revealAnswer() {
+  if (!quizState) return;
+  const answerDiv = document.getElementById("quizAnswer");
+  answerDiv.style.display = "block";
+
+  // Compute root fret: rootMidi maps to a fret on the low E string
+  // Low E = MIDI 40 (E2), so fret = rootMidi - 40
+  const rootFret = quizState.rootMidi - 40;
+
+  const notes = quizState.shape === "3nps"
+    ? build3NPS(quizState.modeKey, rootFret)
+    : buildCAGED(quizState.modeKey, rootFret);
+
+  renderFretboard("fretboardQuiz", notes, rootFret);
+}
 </script>
 </body>
 </html>
