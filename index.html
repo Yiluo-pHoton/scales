@@ -362,7 +362,7 @@ function build3NPS(modeKey, rootFret = 5) {
       scaleIdx++;
     }
   }
-  return assignFingers3NPS(notes);
+  return assignFingers(notes);
 }
 // Hardcoded standard box shapes per mode — fret offsets from rootFret for each string.
 // Each sub-array is [low E, A, D, G, B, high E]. Verified against standard scale charts.
@@ -613,40 +613,46 @@ function playScale(modeKey) {
 }
 
 // ── Fingering helpers ──
-// Assign finger numbers (1=index, 2=middle, 3=ring, 4=pinky) based on fret position.
-// Works per string: maps fret gaps to finger assignments.
+// Assign finger numbers (1=index, 2=middle, 3=ring, 4=pinky) per string.
+// Uses interval pattern between notes to determine correct fingering.
 function assignFingers(notes) {
-  // Group by string
-  const byString = {};
-  notes.forEach(n => {
-    if (!byString[n.string]) byString[n.string] = [];
-    byString[n.string].push(n);
-  });
-  // Find the global hand position (lowest fret across all strings)
-  const allFrets = notes.map(n => n.fret);
-  const positionFret = Math.min(...allFrets); // index finger sits here
-  notes.forEach(n => {
-    const offset = n.fret - positionFret;
-    // offset 0 → 1 (index), 1 → 2 (middle), 2 → 3 (ring), 3 → 4 (pinky)
-    n.finger = Math.min(offset + 1, 4);
-  });
-  return notes;
-}
-
-// For 3NPS the hand shifts per string, so assign fingers per-string independently.
-function assignFingers3NPS(notes) {
   const byString = {};
   notes.forEach(n => {
     if (!byString[n.string]) byString[n.string] = [];
     byString[n.string].push(n);
   });
   for (const s in byString) {
-    const stringNotes = byString[s].sort((a, b) => a.fret - b.fret);
-    const baseFret = stringNotes[0].fret;
-    stringNotes.forEach(n => {
-      const offset = n.fret - baseFret;
-      n.finger = Math.min(offset + 1, 4);
-    });
+    const sn = byString[s].sort((a, b) => a.fret - b.fret);
+    if (sn.length === 1) {
+      sn[0].finger = 1;
+    } else if (sn.length === 2) {
+      const span = sn[1].fret - sn[0].fret;
+      sn[0].finger = 1;
+      sn[1].finger = span <= 1 ? 2 : span <= 2 ? 3 : 4;
+    } else if (sn.length === 3) {
+      const span = sn[2].fret - sn[0].fret;
+      const gap1 = sn[1].fret - sn[0].fret; // gap between 1st and 2nd note
+      sn[0].finger = 1;
+      if (span <= 2) {
+        // H-H: 3 consecutive frets → 1-2-3
+        sn[1].finger = 2;
+        sn[2].finger = 3;
+      } else if (span === 3) {
+        if (gap1 === 1) {
+          // H-W (e.g. 5-6-8) → 1-2-4
+          sn[1].finger = 2;
+          sn[2].finger = 4;
+        } else {
+          // W-H (e.g. 5-7-8) → 1-3-4
+          sn[1].finger = 3;
+          sn[2].finger = 4;
+        }
+      } else {
+        // span >= 4, e.g. W-W (5-7-9) → 1-2-4
+        sn[1].finger = 2;
+        sn[2].finger = 4;
+      }
+    }
   }
   return notes;
 }
