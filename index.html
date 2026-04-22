@@ -396,7 +396,50 @@ function buildCAGED(modeKey, rootFret = 5) {
       });
     });
   }
-  return assignFingers(notes);
+  return assignFingersCAGED(notes);
+}
+
+// For CAGED shapes: 3-note strings set the hand position, 2-note strings inherit it.
+function assignFingersCAGED(notes) {
+  const byString = {};
+  notes.forEach(n => {
+    if (!byString[n.string]) byString[n.string] = [];
+    byString[n.string].push(n);
+  });
+  // First pass: assign 3-note strings per-string, record their base position
+  const stringPos = {};
+  for (let s = 0; s < 6; s++) {
+    if (!byString[s]) continue;
+    const sn = byString[s].sort((a, b) => a.fret - b.fret);
+    if (sn.length >= 3) {
+      const span = sn[2].fret - sn[0].fret;
+      const gap1 = sn[1].fret - sn[0].fret;
+      sn[0].finger = 1;
+      if (span <= 2) { sn[1].finger = 2; sn[2].finger = 3; }
+      else if (span === 3) {
+        if (gap1 === 1) { sn[1].finger = 2; sn[2].finger = 4; }
+        else { sn[1].finger = 3; sn[2].finger = 4; }
+      } else { sn[1].finger = 2; sn[2].finger = 4; }
+      stringPos[s] = sn[0].fret;
+    }
+  }
+  // Second pass: 2-note and 1-note strings use nearest 3-note string's position
+  for (let s = 0; s < 6; s++) {
+    if (!byString[s]) continue;
+    const sn = byString[s].sort((a, b) => a.fret - b.fret);
+    if (sn.length < 3) {
+      let refPos = null;
+      for (let d = 1; d <= 5; d++) {
+        if (s - d >= 0 && stringPos[s - d] !== undefined) { refPos = stringPos[s - d]; break; }
+        if (s + d < 6 && stringPos[s + d] !== undefined) { refPos = stringPos[s + d]; break; }
+      }
+      if (refPos === null) refPos = sn[0].fret;
+      sn.forEach(n => {
+        n.finger = Math.max(1, Math.min(4, n.fret - refPos + 1));
+      });
+    }
+  }
+  return notes;
 }
 // Render a fretboard given a set of notes.
 // Layout: 6 strings stacked (string 6 low E at TOP — guitar convention when viewed from player perspective is reversed,
