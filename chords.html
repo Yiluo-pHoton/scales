@@ -548,7 +548,8 @@ function getAudioCtx() {
   return audioCtx;
 }
 
-function playNote(ctx, freq, startTime, duration) {
+function playNote(ctx, freq, startTime, duration, vol) {
+  if (vol === undefined) vol = 0.30;
   const end = startTime + duration;
   const masterGain = ctx.createGain();
   masterGain.connect(ctx.destination);
@@ -561,9 +562,9 @@ function playNote(ctx, freq, startTime, duration) {
   lpf.connect(masterGain);
 
   masterGain.gain.setValueAtTime(0.0001, startTime);
-  masterGain.gain.linearRampToValueAtTime(0.30, startTime + 0.005);
-  masterGain.gain.exponentialRampToValueAtTime(0.15, startTime + 0.04);
-  masterGain.gain.exponentialRampToValueAtTime(0.06, startTime + duration * 0.5);
+  masterGain.gain.linearRampToValueAtTime(vol, startTime + 0.005);
+  masterGain.gain.exponentialRampToValueAtTime(vol * 0.5, startTime + 0.04);
+  masterGain.gain.exponentialRampToValueAtTime(vol * 0.2, startTime + duration * 0.5);
   masterGain.gain.exponentialRampToValueAtTime(0.003, end);
 
   const harmonics = [
@@ -614,7 +615,11 @@ function playChord(chordType, stringRoot, rootFret, btn) {
   const startString = stringRoot === "E" ? 0 : 1;
   const now = ctx.currentTime + 0.05;
   const strumDelay = 0.04;
-  const sustain = 1.5;
+  const sustain = 2.5;
+
+  // Count active strings to scale volume (avoid clipping with simultaneous notes)
+  const activeCount = shape.slice(startString).filter(x => x !== null).length;
+  const vol = 0.18 / Math.sqrt(activeCount / 3); // ~0.11 per note for 6 strings
 
   isPlaying = true;
   if (btn) { btn.disabled = true; btn.querySelector(".icon").textContent = "♫"; }
@@ -625,7 +630,7 @@ function playChord(chordType, stringRoot, rootFret, btn) {
     const fret = rootFret + shape[s];
     const midi = STRING_MIDI[s] + fret;
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    playNote(ctx, freq, now + strumIdx * strumDelay, sustain);
+    playNote(ctx, freq, now + strumIdx * strumDelay, sustain, vol);
     strumIdx++;
   }
 
@@ -773,8 +778,8 @@ function generateQuiz() {
 
 function playQuizChord() {
   if (!quizState || isPlaying) return;
+  isPlaying = true;
   const btn = document.getElementById("quizPlay");
-  const origText = btn.textContent;
   btn.disabled = true;
   btn.textContent = "Playing...";
 
@@ -785,7 +790,10 @@ function playQuizChord() {
   const startString = quizState.stringRoot === "E" ? 0 : 1;
   const now = ctx.currentTime + 0.05;
   const strumDelay = 0.04;
-  const sustain = 1.5;
+  const sustain = 2.5;
+
+  const activeCount = shape.slice(startString).filter(x => x !== null).length;
+  const vol = 0.18 / Math.sqrt(activeCount / 3);
 
   let strumIdx = 0;
   for (let s = startString; s < 6; s++) {
@@ -793,7 +801,7 @@ function playQuizChord() {
     const fret = quizState.rootFret + shape[s];
     const midi = STRING_MIDI[s] + fret;
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    playNote(ctx, freq, now + strumIdx * strumDelay, sustain);
+    playNote(ctx, freq, now + strumIdx * strumDelay, sustain, vol);
     strumIdx++;
   }
 
