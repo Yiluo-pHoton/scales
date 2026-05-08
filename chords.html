@@ -303,6 +303,26 @@
   </div>
 </div>
 
+<div class="fretboards" id="section212" style="display:none;">
+  <div style="text-align:center;margin-bottom:4px;color:#aaa;font-size:0.85rem;letter-spacing:0.5px;">212 Arpeggio Shapes — 3-string voicings (2-1-2 notes per string)</div>
+  <div class="fretboard-container">
+    <div class="fretboard-title">E-Root 212</div>
+    <div class="fretboard-desc">Strings 6-5-4. Two notes on root string, one on next, two on the third.</div>
+    <svg class="fretboard" id="fretboard212E" viewBox="0 0 640 220"></svg>
+    <button class="play-btn" id="play212BtnE" onclick="play212FromUI('E')">
+      <span class="icon">▶</span> Play Arpeggio (E)
+    </button>
+  </div>
+  <div class="fretboard-container">
+    <div class="fretboard-title">A-Root 212</div>
+    <div class="fretboard-desc">Strings 5-4-3. Same offsets — both groups have 5-semitone gaps.</div>
+    <svg class="fretboard" id="fretboard212A" viewBox="0 0 640 220"></svg>
+    <button class="play-btn" id="play212BtnA" onclick="play212FromUI('A')">
+      <span class="icon">▶</span> Play Arpeggio (A)
+    </button>
+  </div>
+</div>
+
 <!-- Challenge Section -->
 <div class="quiz-section">
   <h2>Challenge Mode</h2>
@@ -410,6 +430,18 @@ const MAJOR_INTERVALS    = [0, 2, 4, 5, 7, 9, 11];
 const NAT_MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 10];
 const HARM_MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 11];
 
+// ── 212 arpeggio shapes ──
+// 3-string voicing: 2 notes (R + 3rd) on root string, 1 note on next, 2 on the third.
+// Offsets are from rootFret. Same offsets work for both E-root (strings 6-5-4)
+// and A-root (strings 5-4-3) because both string groups have 5-semitone gaps.
+const SHAPES_212 = {
+  maj7:  [[0, 4], [2], [1, 2]],   // R 3 | 5 | 7 R
+  min7:  [[0, 3], [2], [0, 2]],   // R b3 | 5 | b7 R
+  dom7:  [[0, 4], [2], [0, 2]],   // R 3 | 5 | b7 R
+  hdim7: [[0, 3], [1], [0, 2]],   // R b3 | b5 | b7 R
+  dim7:  [[0, 3], [1], [-1, 2]],  // R b3 | b5 | bb7 R
+};
+
 // ── Build chord notes ──
 function buildChord(chordType, stringRoot, rootFret) {
   const shape = stringRoot === "E" ? E_SHAPES[chordType] : A_SHAPES[chordType];
@@ -428,6 +460,30 @@ function buildChord(chordType, stringRoot, rootFret) {
     const idx = ct.intervals.indexOf(interval);
     const label = idx >= 0 ? ct.labels[idx] : "?";
     notes.push({ string: s, fret, label, isRoot: interval === 0 });
+  }
+  return { notes, muted };
+}
+
+function build212(chordType, stringRoot, rootFret) {
+  const shape = SHAPES_212[chordType];
+  if (!shape) return null;
+  const ct = CHORD_TYPES[chordType];
+  const startS = stringRoot === "E" ? 0 : 1; // root string index
+  const rootPitch = STRING_PITCHES[startS] + rootFret;
+  const notes = [];
+  const muted = [];
+
+  for (let s = 0; s < 6; s++) {
+    const rel = s - startS; // 0, 1, or 2 for the 3 active strings
+    if (rel < 0 || rel > 2) { muted.push(s); continue; }
+    shape[rel].forEach(off => {
+      const fret = rootFret + off;
+      const pitch = STRING_PITCHES[s] + fret;
+      const interval = ((pitch - rootPitch) % 12 + 12) % 12;
+      const idx = ct.intervals.indexOf(interval);
+      const label = idx >= 0 ? ct.labels[idx] : "?";
+      notes.push({ string: s, fret, label, isRoot: interval === 0 });
+    });
   }
   return { notes, muted };
 }
@@ -641,6 +697,47 @@ function playChord(chordType, stringRoot, rootFret, btn) {
   }, totalTime);
 }
 
+function play212(chordType, stringRoot, rootFret, btn) {
+  if (isPlaying) return;
+  const data = build212(chordType, stringRoot, rootFret);
+  if (!data) return;
+
+  const ctx = getAudioCtx();
+  if (ctx.state === "suspended") ctx.resume();
+
+  isPlaying = true;
+  if (btn) { btn.disabled = true; btn.querySelector(".icon").textContent = "♫"; }
+
+  // Sort notes: ascending by string index, then by fret within the same string
+  const sorted = data.notes.slice().sort((a, b) => a.string - b.string || a.fret - b.fret);
+  const noteDelay = 0.18; // slower than strum — arpeggio style
+  const sustain = 2.0;
+  const now = ctx.currentTime + 0.05;
+  const vol = 0.22;
+
+  sorted.forEach((n, i) => {
+    const midi = STRING_MIDI[n.string] + n.fret;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    playNote(ctx, freq, now + i * noteDelay, sustain, vol);
+  });
+
+  const totalTime = sorted.length * noteDelay * 1000 + sustain * 1000 + 200;
+  setTimeout(() => {
+    isPlaying = false;
+    if (btn) { btn.disabled = false; btn.querySelector(".icon").textContent = "▶"; }
+  }, totalTime);
+}
+
+function play212FromUI(stringRoot) {
+  const rootIdx = parseInt(document.getElementById("rootKeySelect").value);
+  const rootFret = stringRoot === "E"
+    ? (rootIdx - 4 + 12) % 12
+    : (rootIdx - 9 + 12) % 12;
+  const actualFret = rootFret === 0 ? 12 : rootFret;
+  const btn = document.getElementById(stringRoot === "E" ? "play212BtnE" : "play212BtnA");
+  play212(currentChord, stringRoot, actualFret, btn);
+}
+
 // ── UI ──
 let currentChord = "major";
 
@@ -673,6 +770,18 @@ function showChord(chordType) {
   renderChordBoard("fretboardE", eChord.notes, eChord.muted, rootFret);
   const aChord = buildChord(chordType, "A", rootFret);
   renderChordBoard("fretboardA", aChord.notes, aChord.muted, rootFret);
+
+  // 212 arpeggio shapes — only for 7th chord types that have them
+  const section212 = document.getElementById("section212");
+  if (SHAPES_212[chordType]) {
+    section212.style.display = "";
+    const e212 = build212(chordType, "E", rootFret);
+    renderChordBoard("fretboard212E", e212.notes, e212.muted, rootFret);
+    const a212 = build212(chordType, "A", rootFret);
+    renderChordBoard("fretboard212A", a212.notes, a212.muted, rootFret);
+  } else {
+    section212.style.display = "none";
+  }
 }
 
 function playFromUI(stringRoot) {
