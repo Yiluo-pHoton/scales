@@ -497,7 +497,8 @@ function build212(chordType, stringRoot, rootFret) {
 }
 
 // ── Render fretboard ──
-function renderChordBoard(svgId, notes, muted, rootFret) {
+function renderChordBoard(svgId, notes, muted, rootFret, barreMode) {
+  // barreMode: "E" = barre from string 0, "A" = barre from string 1, falsy = no barre
   const svg = document.getElementById(svgId);
   svg.innerHTML = "";
   const ns = "http://www.w3.org/2000/svg";
@@ -535,16 +536,6 @@ function renderChordBoard(svgId, notes, muted, rootFret) {
     svg.appendChild(line);
   }
 
-  // Fret number at the root fret
-  if (rootFret >= startFret && rootFret <= endFret) {
-    const fIdx = rootFret - startFret;
-    const tx = padL + (fIdx - 0.5) * fretW;
-    const t = document.createElementNS(ns, "text");
-    t.setAttribute("x", tx); t.setAttribute("y", padT - 10);
-    t.setAttribute("class", "fret-num"); t.textContent = rootFret;
-    svg.appendChild(t);
-  }
-
   // Strings
   for (let s = 0; s < 6; s++) {
     const y = padT + (5 - s) * stringSpacing;
@@ -572,12 +563,11 @@ function renderChordBoard(svgId, notes, muted, rootFret) {
     svg.appendChild(t);
   });
 
-  // Barre indicator: find strings at the barre fret (offset 0)
-  const barreNotes = notes.filter(n => n.fret === rootFret);
-  if (barreNotes.length >= 2) {
-    const barreStrings = barreNotes.map(n => n.string).sort((a, b) => a - b);
-    const loS = barreStrings[0];
-    const hiS = barreStrings[barreStrings.length - 1];
+  // Barre indicator: draw from root string to highest non-muted string
+  if (barreMode) {
+    const loS = barreMode === "E" ? 0 : 1;
+    const playedStrings = notes.map(n => n.string);
+    const hiS = Math.max(...playedStrings);
     const yLo = padT + (5 - loS) * stringSpacing;
     const yHi = padT + (5 - hiS) * stringSpacing;
     const bx = padL + (rootFret - startFret - 0.5) * fretW;
@@ -775,9 +765,9 @@ function showChord(chordType) {
 
   const rootFret = 5;
   const eChord = buildChord(chordType, "E", rootFret);
-  renderChordBoard("fretboardE", eChord.notes, eChord.muted, rootFret);
+  renderChordBoard("fretboardE", eChord.notes, eChord.muted, rootFret, "E");
   const aChord = buildChord(chordType, "A", rootFret);
-  renderChordBoard("fretboardA", aChord.notes, aChord.muted, rootFret);
+  renderChordBoard("fretboardA", aChord.notes, aChord.muted, rootFret, "A");
 
   // 212 arpeggio shapes — only for 7th chord types that have them
   const section212 = document.getElementById("section212");
@@ -941,7 +931,7 @@ function revealAnswer() {
     " (fret " + quizState.rootFret + ", " + quizState.stringRoot + " string)";
 
   const chord = buildChord(quizState.quality, quizState.stringRoot, quizState.rootFret);
-  renderChordBoard("fretboardQuiz", chord.notes, chord.muted, quizState.rootFret);
+  renderChordBoard("fretboardQuiz", chord.notes, chord.muted, quizState.rootFret, quizState.stringRoot);
 }
 </script>
 </body>
