@@ -781,7 +781,7 @@ function showChord(chordType) {
 
   // 212 arpeggio shapes — only for 7th chord types that have them
   const section212 = document.getElementById("section212");
-  if (SHAPES_212[chordType]) {
+  if (E_SHAPES_212[chordType]) {
     section212.style.display = "";
     const e212 = build212(chordType, "E", rootFret);
     renderChordBoard("fretboard212E", e212.notes, e212.muted, rootFret);
