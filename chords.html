@@ -304,10 +304,10 @@
 </div>
 
 <div class="fretboards" id="section212" style="display:none;">
-  <div style="text-align:center;margin-bottom:4px;color:#aaa;font-size:0.85rem;letter-spacing:0.5px;">212 Arpeggio Shapes — 3-string voicings (2-1-2 notes per string)</div>
+  <div style="text-align:center;margin-bottom:4px;color:#aaa;font-size:0.85rem;letter-spacing:0.5px;">212 Arpeggio — chord tones ascending in a 2-1-2-1… pattern across all strings</div>
   <div class="fretboard-container">
     <div class="fretboard-title">E-Root 212</div>
-    <div class="fretboard-desc">Strings 6-5-4. Two notes on root string, one on next, two on the third.</div>
+    <div class="fretboard-desc">All 6 strings (2-1-2-1-2-1). Chord tones cycle R→3→5→7→R→… ascending.</div>
     <svg class="fretboard" id="fretboard212E" viewBox="0 0 640 220"></svg>
     <button class="play-btn" id="play212BtnE" onclick="play212FromUI('E')">
       <span class="icon">▶</span> Play Arpeggio (E)
@@ -315,7 +315,7 @@
   </div>
   <div class="fretboard-container">
     <div class="fretboard-title">A-Root 212</div>
-    <div class="fretboard-desc">Strings 5-4-3. Same offsets — both groups have 5-semitone gaps.</div>
+    <div class="fretboard-desc">Strings 5→1 (2-1-2-1-2). Offsets differ from E on upper strings due to G→B gap.</div>
     <svg class="fretboard" id="fretboard212A" viewBox="0 0 640 220"></svg>
     <button class="play-btn" id="play212BtnA" onclick="play212FromUI('A')">
       <span class="icon">▶</span> Play Arpeggio (A)
@@ -431,15 +431,21 @@ const NAT_MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 10];
 const HARM_MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 11];
 
 // ── 212 arpeggio shapes ──
-// 3-string voicing: 2 notes (R + 3rd) on root string, 1 note on next, 2 on the third.
-// Offsets are from rootFret. Same offsets work for both E-root (strings 6-5-4)
-// and A-root (strings 5-4-3) because both string groups have 5-semitone gaps.
-const SHAPES_212 = {
-  maj7:  [[0, 4], [2], [1, 2]],   // R 3 | 5 | 7 R
-  min7:  [[0, 3], [2], [0, 2]],   // R b3 | 5 | b7 R
-  dom7:  [[0, 4], [2], [0, 2]],   // R 3 | 5 | b7 R
-  hdim7: [[0, 3], [1], [0, 2]],   // R b3 | b5 | b7 R
-  dim7:  [[0, 3], [1], [-1, 2]],  // R b3 | b5 | bb7 R
+// Full-string voicing: 2-1-2-1-2-1 note pattern cycling through chord tones ascending.
+// E and A roots differ on upper strings because the G→B gap is 4 semitones (not 5).
+const E_SHAPES_212 = {  // strings 0-5 (all 6), pattern 2-1-2-1-2-1
+  maj7:  [[0,4], [2], [1,2], [1], [0,4], [0]],   // R 3 | 5 | 7 R | 3 | 5 7 | R
+  min7:  [[0,3], [2], [0,2], [0], [0,3], [0]],   // R b3 | 5 | b7 R | b3 | 5 b7 | R
+  dom7:  [[0,4], [2], [0,2], [1], [0,3], [0]],   // R 3 | 5 | b7 R | 3 | 5 b7 | R
+  hdim7: [[0,3], [1], [0,2], [0], [-1,3], [0]],  // R b3 | b5 | b7 R | b3 | b5 b7 | R
+  dim7:  [[0,3], [1], [-1,2], [0], [-1,2], [0]], // R b3 | b5 | bb7 R | b3 | b5 bb7 | R
+};
+const A_SHAPES_212 = {  // strings 1-5 (5 strings), pattern 2-1-2-1-2
+  maj7:  [[0,4], [2], [1,2], [2], [0,4]],   // R 3 | 5 | 7 R | 3 | 5 7
+  min7:  [[0,3], [2], [0,2], [1], [0,3]],   // R b3 | 5 | b7 R | b3 | 5 b7
+  dom7:  [[0,4], [2], [0,2], [2], [0,3]],   // R 3 | 5 | b7 R | 3 | 5 b7
+  hdim7: [[0,3], [1], [0,2], [1], [-1,3]],  // R b3 | b5 | b7 R | b3 | b5 b7
+  dim7:  [[0,3], [1], [-1,2], [1], [-1,2]], // R b3 | b5 | bb7 R | b3 | b5 bb7
 };
 
 // ── Build chord notes ──
@@ -465,17 +471,19 @@ function buildChord(chordType, stringRoot, rootFret) {
 }
 
 function build212(chordType, stringRoot, rootFret) {
-  const shape = SHAPES_212[chordType];
+  const shapeTable = stringRoot === "E" ? E_SHAPES_212 : A_SHAPES_212;
+  const shape = shapeTable[chordType];
   if (!shape) return null;
   const ct = CHORD_TYPES[chordType];
-  const startS = stringRoot === "E" ? 0 : 1; // root string index
+  const startS = stringRoot === "E" ? 0 : 1;
+  const numStrings = shape.length; // 6 for E, 5 for A
   const rootPitch = STRING_PITCHES[startS] + rootFret;
   const notes = [];
   const muted = [];
 
   for (let s = 0; s < 6; s++) {
-    const rel = s - startS; // 0, 1, or 2 for the 3 active strings
-    if (rel < 0 || rel > 2) { muted.push(s); continue; }
+    const rel = s - startS;
+    if (rel < 0 || rel >= numStrings) { muted.push(s); continue; }
     shape[rel].forEach(off => {
       const fret = rootFret + off;
       const pitch = STRING_PITCHES[s] + fret;
