@@ -301,11 +301,8 @@
       <div class="legend-item"><div class="legend-dot" style="background: var(--note)"></div>Chord tone</div>
     </div>
   </div>
-</div>
-
-<div class="fretboards" id="section212" style="display:none;">
-  <div style="text-align:center;margin-bottom:4px;color:#aaa;font-size:0.85rem;letter-spacing:0.5px;">212 Arpeggio — chord tones ascending in a 2-1-2-1… pattern across all strings</div>
-  <div class="fretboard-container">
+  <div class="section212-item" id="section212label" style="display:none;grid-column:1/-1;text-align:center;color:#aaa;font-size:0.85rem;letter-spacing:0.5px;margin-top:8px;">212 Arpeggio — chord tones ascending in a 2-1-2-1… pattern across all strings</div>
+  <div class="fretboard-container section212-item" id="section212E" style="display:none;">
     <div class="fretboard-title">E-Root 212</div>
     <div class="fretboard-desc">All 6 strings (2-1-2-1-2-1). Chord tones cycle R→3→5→7→R→… ascending.</div>
     <svg class="fretboard" id="fretboard212E" viewBox="0 0 640 220"></svg>
@@ -313,7 +310,7 @@
       <span class="icon">▶</span> Play Arpeggio (E)
     </button>
   </div>
-  <div class="fretboard-container">
+  <div class="fretboard-container section212-item" id="section212A" style="display:none;">
     <div class="fretboard-title">A-Root 212</div>
     <div class="fretboard-desc">Strings 5→1 (2-1-2-1-2). Offsets differ from E on upper strings due to G→B gap.</div>
     <svg class="fretboard" id="fretboard212A" viewBox="0 0 640 220"></svg>
@@ -788,16 +785,16 @@ function showChord(chordType) {
   const aChord = buildChord(chordType, "A", rootFret);
   renderChordBoard("fretboardA", aChord.notes, aChord.muted, rootFret, "A");
 
-  // 212 arpeggio shapes — only for 7th chord types that have them
-  const section212 = document.getElementById("section212");
-  if (E_SHAPES_212[chordType]) {
-    section212.style.display = "";
+  // 212 arpeggio shapes — only for chord types that have them
+  const show212 = !!E_SHAPES_212[chordType];
+  document.querySelectorAll(".section212-item").forEach(el => {
+    el.style.display = show212 ? "" : "none";
+  });
+  if (show212) {
     const e212 = build212(chordType, "E", rootFret);
     renderChordBoard("fretboard212E", e212.notes, e212.muted, rootFret);
     const a212 = build212(chordType, "A", rootFret);
     renderChordBoard("fretboard212A", a212.notes, a212.muted, rootFret);
-  } else {
-    section212.style.display = "none";
   }
 }
 
