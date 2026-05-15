@@ -759,6 +759,7 @@ const QUALITY_ORDER = ["major","minor","dim","aug","maj7","dom7","min7","hdim7",
 
 function showChord(chordType) {
   currentChord = chordType;
+  window.location.hash = chordType;
   const ct = CHORD_TYPES[chordType];
 
   // Get root key for play
@@ -838,9 +839,12 @@ buildDiatonicRow("majorRow", MAJOR_DIATONIC);
 buildDiatonicRow("natMinorRow", NAT_MINOR_DIATONIC);
 buildDiatonicRow("harmMinorRow", HARM_MINOR_DIATONIC);
 
-// Default selection
-showChord("major");
-qualityRow.children[0].classList.add("active"); // "Major" is index 0 in QUALITY_ORDER
+// Restore from URL hash or default to major
+const hashChord = window.location.hash.slice(1);
+const initialChord = CHORD_TYPES[hashChord] ? hashChord : "major";
+showChord(initialChord);
+const qIdx = QUALITY_ORDER.indexOf(initialChord);
+if (qIdx >= 0) qualityRow.children[qIdx].classList.add("active");
 
 // ── Challenge / Quiz ──
 let quizState = null;
