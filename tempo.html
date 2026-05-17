@@ -17,10 +17,10 @@
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; padding: 20px;
+    margin: 0 auto; padding: 20px;
     background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    max-width: 700px; margin: 0 auto; padding: 20px;
+    max-width: 960px;
   }
   .nav-link {
     font-size: 13px; color: var(--muted); text-decoration: none;
@@ -28,64 +28,135 @@
   }
   .nav-link:hover { color: var(--text); }
   h1 { margin: 0 0 6px 0; font-size: 22px; font-weight: 600; }
-  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+
+  /* ── Main 3-column grid ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 180px 1fr 180px;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+    .side-settings { display: flex; gap: 12px; flex-wrap: wrap; }
+    .side-settings .setting-group { flex: 1; min-width: 140px; }
+  }
+
+  /* ── Side setting panels ── */
+  .side-settings {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .setting-group {
+    background: var(--panel); border-radius: 8px; padding: 12px 14px;
+  }
+  .setting-label {
+    font-size: 11px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.8px; margin-bottom: 8px;
+  }
+  .setting-col { display: flex; flex-direction: column; gap: 5px; }
+  .setting-row { display: flex; gap: 5px; flex-wrap: wrap; }
+  .opt-btn {
+    padding: 5px 10px; background: #333; color: var(--text);
+    border: 1px solid #444; border-radius: 6px; cursor: pointer;
+    font-size: 12px; transition: all 0.15s; text-align: center;
+  }
+  .opt-btn:hover { border-color: #666; }
+  .opt-btn.active { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+
+  /* ── Time signature buttons ── */
+  .ts-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 3px 7px; background: #333; color: var(--text);
+    border: 1px solid #444; border-radius: 6px; cursor: pointer;
+    font-weight: 700; line-height: 1;
+    transition: all 0.15s; min-width: 32px; gap: 1px;
+  }
+  .ts-btn:hover { border-color: #666; }
+  .ts-btn.active { background: var(--accent); color: #111; border-color: var(--accent); }
+  .ts-num { font-size: 14px; font-weight: 700; }
+  .ts-line { width: 14px; height: 1.5px; background: currentColor; }
+  .ts-den { font-size: 14px; font-weight: 700; }
 
   /* ── Tempo control ── */
-  .tempo-section {
-    background: var(--panel); border-radius: 12px; padding: 24px;
-    text-align: center; margin-bottom: 20px;
+  .tempo-row {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
   }
   .tempo-display {
-    font-size: 72px; font-weight: 700; letter-spacing: -2px;
-    margin: 8px 0; cursor: default; user-select: none;
-  }
-  .tempo-label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-  .tempo-controls {
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    margin: 16px 0 12px;
+    font-size: 20px; font-weight: 700; letter-spacing: -1px;
+    min-width: 34px; text-align: center; cursor: default; user-select: none;
   }
   .tempo-btn {
-    width: 40px; height: 40px; border-radius: 50%;
+    width: 26px; height: 26px; border-radius: 50%;
     background: #333; color: var(--text); border: 1px solid #555;
-    font-size: 22px; cursor: pointer; display: flex;
+    font-size: 15px; cursor: pointer; display: flex;
     align-items: center; justify-content: center;
     line-height: 1; padding: 0;
   }
   .tempo-btn:hover { background: #444; }
   .tempo-btn:active { background: #555; }
   .tempo-slider {
-    flex: 1; max-width: 300px; accent-color: var(--accent);
-    height: 6px; cursor: pointer;
+    flex: 1; min-width: 50px; accent-color: var(--accent);
+    height: 5px; cursor: pointer;
   }
   .tap-btn {
-    padding: 10px 24px; background: var(--accent); color: #111;
-    border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
-    cursor: pointer; margin-top: 8px;
+    padding: 4px 10px; background: var(--accent); color: #111;
+    border: none; border-radius: 5px; font-size: 11px; font-weight: 600;
+    cursor: pointer;
   }
   .tap-btn:hover { filter: brightness(1.1); }
   .tap-btn:active { filter: brightness(0.9); }
 
-  /* ── Settings row ── */
-  .settings {
-    display: flex; flex-wrap: wrap; gap: 16px;
-    margin-bottom: 20px; align-items: flex-start;
+  /* ── Playback area (center column) ── */
+  .center-column {
+    display: flex; flex-direction: column; gap: 12px;
   }
-  .setting-group {
-    background: var(--panel); border-radius: 8px; padding: 14px 16px;
-    flex: 1; min-width: 180px;
+  .playback-area {
+    background: var(--panel); border-radius: 12px; padding: 28px 20px;
+    text-align: center; min-height: 220px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  .setting-label {
-    font-size: 12px; color: var(--muted); text-transform: uppercase;
-    letter-spacing: 0.8px; margin-bottom: 8px;
+  .now-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .now-figure svg { height: 80px; }
+  .next-label { font-size: 11px; color: var(--muted); margin-top: 16px; text-transform: uppercase; letter-spacing: 0.8px; }
+  .next-figure svg { height: 54px; opacity: 0.5; margin-top: 4px; }
+  .beat-dots {
+    display: flex; gap: 14px; margin-top: 14px;
   }
-  .setting-row { display: flex; gap: 6px; flex-wrap: wrap; }
-  .opt-btn {
-    padding: 6px 14px; background: #333; color: var(--text);
-    border: 1px solid #444; border-radius: 6px; cursor: pointer;
-    font-size: 13px; transition: all 0.15s;
+  .beat-dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #333; border: 2px solid #555;
+    transition: all 0.06s;
   }
-  .opt-btn:hover { border-color: #666; }
-  .opt-btn.active { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+  .beat-dot.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px 4px rgba(243,156,18,0.5);
+    transform: scale(1.25);
+  }
+  .beat-dot.downbeat.on {
+    background: var(--root);
+    border-color: var(--root);
+    box-shadow: 0 0 14px 5px rgba(231,76,60,0.55);
+    transform: scale(1.35);
+  }
+  .bar-counter { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  /* ── Transport ── */
+  .transport {
+    display: flex; justify-content: center;
+  }
+  .play-stop-btn {
+    padding: 12px 36px; border-radius: 10px; font-size: 15px;
+    font-weight: 600; cursor: pointer; border: none;
+  }
+  .play-stop-btn.play { background: var(--green); color: #111; }
+  .play-stop-btn.play:hover { filter: brightness(1.1); }
+  .play-stop-btn.stop { background: var(--root); color: #fff; }
+  .play-stop-btn.stop:hover { filter: brightness(1.1); }
 
   /* ── Figure buttons ── */
   .figures-section {
@@ -96,14 +167,14 @@
     display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
   }
   .fig-btn {
-    width: 70px; height: 64px; background: #333; border: 2px solid #444;
+    width: 80px; height: 72px; background: #333; border: 2px solid #444;
     border-radius: 8px; cursor: pointer; display: flex; flex-direction: column;
     align-items: center; justify-content: center; padding: 4px;
     transition: all 0.15s;
   }
   .fig-btn:hover { border-color: #666; }
   .fig-btn.active { border-color: var(--accent); background: #3a3020; }
-  .fig-btn svg { width: 60px; height: 36px; }
+  .fig-btn svg { width: 68px; height: 44px; }
   .fig-btn .fig-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
   .fig-btn.active .fig-label { color: var(--accent); }
   .fig-select-row {
@@ -114,40 +185,6 @@
     color: var(--muted); border-radius: 4px; cursor: pointer; font-size: 12px;
   }
   .fig-select-btn:hover { color: var(--text); border-color: #888; }
-
-  /* ── Now playing / Next up ── */
-  .playback-area {
-    background: var(--panel); border-radius: 12px; padding: 32px 24px;
-    text-align: center; margin-bottom: 20px; min-height: 280px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-  }
-  .now-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-  .now-figure svg { height: 60px; }
-  .next-label { font-size: 11px; color: var(--muted); margin-top: 20px; text-transform: uppercase; letter-spacing: 0.8px; }
-  .next-figure svg { height: 36px; opacity: 0.5; margin-top: 4px; }
-  .beat-dots {
-    display: flex; gap: 10px; margin-top: 16px;
-  }
-  .beat-dot {
-    width: 14px; height: 14px; border-radius: 50%;
-    background: #444; transition: background 0.08s;
-  }
-  .beat-dot.on { background: var(--accent); }
-  .beat-dot.downbeat.on { background: var(--root); }
-  .bar-counter { font-size: 12px; color: var(--muted); margin-top: 8px; }
-
-  /* ── Transport ── */
-  .transport {
-    display: flex; justify-content: center; gap: 16px; margin-bottom: 24px;
-  }
-  .play-stop-btn {
-    padding: 14px 40px; border-radius: 10px; font-size: 16px;
-    font-weight: 600; cursor: pointer; border: none;
-  }
-  .play-stop-btn.play { background: var(--green); color: #111; }
-  .play-stop-btn.play:hover { filter: brightness(1.1); }
-  .play-stop-btn.stop { background: var(--root); color: #fff; }
-  .play-stop-btn.stop:hover { filter: brightness(1.1); }
 
   /* ── Staff notation rendering ── */
   .staff-note { fill: var(--text); }
@@ -165,42 +202,53 @@
 <h1>Rhythm Practice</h1>
 <div class="subtitle">Metronome-based rhythm trainer — practice subdivisions with staff notation.</div>
 
-<!-- Playback area (central focus) -->
-<div class="playback-area" id="playbackArea">
-  <div class="now-label">Select figures and press Play</div>
-</div>
+<!-- 3-column layout: settings | playback | settings -->
+<div class="main-grid">
 
-<!-- Transport -->
-<div class="transport">
-  <button class="play-stop-btn play" id="transportBtn">▶ Play</button>
-</div>
+  <!-- Left settings -->
+  <div class="side-settings">
+    <div class="setting-group">
+      <div class="setting-label">Tempo (BPM)</div>
+      <div class="tempo-row">
+        <button class="tempo-btn" id="tempoMinus5" title="-5">−</button>
+        <div class="tempo-display" id="tempoDisplay">80</div>
+        <button class="tempo-btn" id="tempoPlus5" title="+5">+</button>
+      </div>
+      <div style="margin-top:6px;">
+        <input type="range" class="tempo-slider" id="tempoSlider" min="30" max="300" value="80" style="width:100%;">
+      </div>
+      <div style="margin-top:6px;text-align:center;">
+        <button class="tap-btn" id="tapBtn">Tap Tempo</button>
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">Time Signature</div>
+      <div class="setting-row" id="beatsRow"></div>
+    </div>
+  </div>
 
-<!-- Tempo -->
-<div class="tempo-section">
-  <div class="tempo-label">BPM</div>
-  <div class="tempo-display" id="tempoDisplay">120</div>
-  <div class="tempo-controls">
-    <button class="tempo-btn" id="tempoMinus5" title="-5">−</button>
-    <input type="range" class="tempo-slider" id="tempoSlider" min="30" max="300" value="120">
-    <button class="tempo-btn" id="tempoPlus5" title="+5">+</button>
+  <!-- Center: playback + transport -->
+  <div class="center-column">
+    <div class="playback-area" id="playbackArea">
+      <div class="now-label">Select figures and press Play</div>
+    </div>
+    <div class="transport">
+      <button class="play-stop-btn play" id="transportBtn">▶ Play</button>
+    </div>
   </div>
-  <button class="tap-btn" id="tapBtn">Tap Tempo</button>
-</div>
 
-<!-- Settings -->
-<div class="settings">
-  <div class="setting-group">
-    <div class="setting-label">Beats per Bar</div>
-    <div class="setting-row" id="beatsRow"></div>
+  <!-- Right settings -->
+  <div class="side-settings">
+    <div class="setting-group">
+      <div class="setting-label">Bars per Figure</div>
+      <div class="setting-row" id="barsRow"></div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">Click Sound</div>
+      <div class="setting-col" id="clickRow"></div>
+    </div>
   </div>
-  <div class="setting-group">
-    <div class="setting-label">Bars per Figure</div>
-    <div class="setting-row" id="barsRow"></div>
-  </div>
-  <div class="setting-group">
-    <div class="setting-label">Click Sound</div>
-    <div class="setting-row" id="clickRow"></div>
-  </div>
+
 </div>
 
 <!-- Figures -->
@@ -237,44 +285,55 @@ function staffLines(w, staffY, gap) {
 
 // Whole note (open oval, no stem)
 function wholeNote(cx, cy) {
-  return `<ellipse cx="${cx}" cy="${cy}" rx="7" ry="5" fill="none" stroke="var(--text)" stroke-width="2"/>`;
+  return `<ellipse cx="${cx}" cy="${cy}" rx="6" ry="4.2" fill="none" stroke="var(--text)" stroke-width="1.8"/>`;
 }
 
 // Half note (open oval, stem up)
 function halfNote(cx, cy) {
-  return `<ellipse cx="${cx}" cy="${cy}" rx="5.5" ry="4" fill="none" stroke="var(--text)" stroke-width="1.8"/>` +
-    `<line x1="${cx+5}" x2="${cx+5}" y1="${cy}" y2="${cy-28}" class="staff-stem"/>`;
+  return `<ellipse cx="${cx}" cy="${cy}" rx="4.2" ry="3.2" fill="none" stroke="var(--text)" stroke-width="1.5"/>` +
+    `<line x1="${cx+3.8}" x2="${cx+3.8}" y1="${cy}" y2="${cy-22}" class="staff-stem"/>`;
 }
 
 // Filled notehead
 function noteHead(cx, cy) {
-  return `<ellipse cx="${cx}" cy="${cy}" rx="5" ry="3.8" class="staff-note" transform="rotate(-10,${cx},${cy})"/>`;
+  return `<ellipse cx="${cx}" cy="${cy}" rx="3.8" ry="2.8" class="staff-note" transform="rotate(-10,${cx},${cy})"/>`;
 }
 
 // Quarter note (filled, stem up)
 function quarterNote(cx, cy) {
   return noteHead(cx, cy) +
-    `<line x1="${cx+4.5}" x2="${cx+4.5}" y1="${cy}" y2="${cy-28}" class="staff-stem"/>`;
+    `<line x1="${cx+3.5}" x2="${cx+3.5}" y1="${cy}" y2="${cy-22}" class="staff-stem"/>`;
 }
 
 // Beamed group: n notes evenly spaced, with beam(s) on top
 function beamedGroup(startX, cy, n, beams, w) {
   const spacing = w / n;
   let s = '';
-  const stemTop = cy - 28;
+  const stemTop = cy - 22;
   for (let i = 0; i < n; i++) {
     const cx = startX + spacing * (i + 0.5);
     s += noteHead(cx, cy);
-    s += `<line x1="${cx+4.5}" x2="${cx+4.5}" y1="${cy}" y2="${stemTop}" class="staff-stem"/>`;
+    s += `<line x1="${cx+3.5}" x2="${cx+3.5}" y1="${cy}" y2="${stemTop}" class="staff-stem"/>`;
   }
   // Beams
-  const x1 = startX + spacing * 0.5 + 4.5;
-  const x2 = startX + spacing * (n - 0.5) + 4.5;
+  const x1 = startX + spacing * 0.5 + 3.5;
+  const x2 = startX + spacing * (n - 0.5) + 3.5;
   for (let b = 0; b < beams; b++) {
-    const by = stemTop + b * 6;
-    s += `<rect x="${x1}" y="${by}" width="${x2-x1}" height="3.5" class="staff-beam" rx="0.5"/>`;
+    const by = stemTop + b * 5;
+    s += `<rect x="${x1}" y="${by}" width="${x2-x1}" height="3" class="staff-beam" rx="0.5"/>`;
   }
   return s;
+}
+
+// Tuplet bracket: horizontal bar spanning group with number above
+function tupletBracket(x1, x2, y, num, fontSize) {
+  const mid = (x1 + x2) / 2;
+  const bracketY = y;
+  const tickH = 3;
+  return `<line x1="${x1}" x2="${x2}" y1="${bracketY}" y2="${bracketY}" stroke="var(--accent)" stroke-width="1.5"/>` +
+    `<line x1="${x1}" x2="${x1}" y1="${bracketY}" y2="${bracketY+tickH}" stroke="var(--accent)" stroke-width="1.5"/>` +
+    `<line x1="${x2}" x2="${x2}" y1="${bracketY}" y2="${bracketY+tickH}" stroke="var(--accent)" stroke-width="1.5"/>` +
+    `<text x="${mid}" y="${bracketY-2}" text-anchor="middle" font-size="${fontSize}" fill="var(--accent)" font-weight="600">${num}</text>`;
 }
 
 // Build notation SVGs for each figure
@@ -293,62 +352,54 @@ const FIGURES = {
 const FIGURE_ORDER = ["whole","half","quarter","eighth","triplet","sixteenth","fivelet","sixlet","sevenlet"];
 
 function buildFigureSVG(key, large) {
-  const sg = large ? 6 : 4; // staff gap
-  const h = large ? 60 : 36;
-  const w = large ? 200 : 60;
-  const staffY = large ? 18 : 10;
-  const cy = staffY + sg * 3; // note on middle line
+  // No staff lines — just noteheads, stems, beams, and brackets
+  // All figures use the same viewBox so noteheads align across buttons
+  const stemH = 22;
+  const bracketH = large ? 18 : 16; // always reserve space for bracket
+  const w = large ? 140 : 70;
+  const cy = bracketH + stemH + (large ? 8 : 6); // notehead y — same for all
+  const h = cy + (large ? 8 : 6);
+  const gw = w * 0.86;
+  const sx = w * 0.07;
+  const fs = large ? 12 : 10;
+  const isTuplet = ["triplet","fivelet","sixlet","sevenlet"].includes(key);
 
-  let inner = staffLines(w, staffY, sg);
+  let inner = '';
 
   if (key === "whole") {
     inner += wholeNote(w/2, cy);
   } else if (key === "half") {
-    if (large) {
-      // 2 half notes
-      inner += halfNote(w*0.3, cy);
-      inner += halfNote(w*0.7, cy);
-    } else {
-      inner += halfNote(w/2, cy);
-    }
+    inner += halfNote(w/2, cy);
   } else if (key === "quarter") {
-    if (large) {
-      for (let i = 0; i < 4; i++) inner += quarterNote(w*(i+0.5)/4, cy);
-    } else {
-      inner += quarterNote(w/2, cy);
-    }
+    inner += quarterNote(w/2, cy);
   } else if (key === "eighth") {
-    inner += beamedGroup(large ? w*0.05 : 2, cy, large ? 8 : 2, 1, large ? w*0.9 : w-4);
+    inner += beamedGroup(sx, cy, 2, 1, gw);
   } else if (key === "triplet") {
-    const n = large ? 6 : 3;  // show 2 beats large, 1 beat small
-    const gw = large ? w*0.9 : w-4;
-    const sx = large ? w*0.05 : 2;
-    inner += beamedGroup(sx, cy, n, 1, gw);
-    // Triplet bracket: "3" above each group of 3
-    const groups = large ? 2 : 1;
-    const groupW = gw / groups;
-    for (let g = 0; g < groups; g++) {
-      const gx = sx + g * groupW;
-      const mid = gx + groupW / 2;
-      inner += `<text x="${mid}" y="${staffY - 2}" text-anchor="middle" font-size="${large?11:8}" fill="var(--accent)" font-weight="600">3</text>`;
-    }
+    inner += beamedGroup(sx, cy, 3, 1, gw);
+    const spacing = gw / 3;
+    const bx1 = sx + spacing * 0.5 + 3.5;
+    const bx2 = sx + spacing * 2.5 + 3.5;
+    inner += tupletBracket(bx1, bx2, cy - stemH - 5, "3", fs);
   } else if (key === "sixteenth") {
-    inner += beamedGroup(large ? w*0.05 : 2, cy, large ? 8 : 4, 2, large ? w*0.9 : w-4);
+    inner += beamedGroup(sx, cy, 4, 2, gw);
   } else if (key === "fivelet") {
-    const n = large ? 5 : 5;
-    inner += beamedGroup(large ? w*0.05 : 2, cy, n, 1, large ? w*0.9 : w-4);
-    const mid = w / 2;
-    inner += `<text x="${mid}" y="${staffY - 2}" text-anchor="middle" font-size="${large?11:8}" fill="var(--accent)" font-weight="600">5</text>`;
+    inner += beamedGroup(sx, cy, 5, 2, gw);
+    const spacing = gw / 5;
+    const bx1 = sx + spacing * 0.5 + 3.5;
+    const bx2 = sx + spacing * 4.5 + 3.5;
+    inner += tupletBracket(bx1, bx2, cy - stemH - 5, "5", fs);
   } else if (key === "sixlet") {
-    const n = large ? 6 : 6;
-    inner += beamedGroup(large ? w*0.05 : 2, cy, n, 1, large ? w*0.9 : w-4);
-    const mid = w / 2;
-    inner += `<text x="${mid}" y="${staffY - 2}" text-anchor="middle" font-size="${large?11:8}" fill="var(--accent)" font-weight="600">6</text>`;
+    inner += beamedGroup(sx, cy, 6, 2, gw);
+    const spacing = gw / 6;
+    const bx1 = sx + spacing * 0.5 + 3.5;
+    const bx2 = sx + spacing * 5.5 + 3.5;
+    inner += tupletBracket(bx1, bx2, cy - stemH - 5, "6", fs);
   } else if (key === "sevenlet") {
-    const n = large ? 7 : 7;
-    inner += beamedGroup(large ? w*0.05 : 2, cy, n, 1, large ? w*0.9 : w-4);
-    const mid = w / 2;
-    inner += `<text x="${mid}" y="${staffY - 2}" text-anchor="middle" font-size="${large?11:8}" fill="var(--accent)" font-weight="600">7</text>`;
+    inner += beamedGroup(sx, cy, 7, 2, gw);
+    const spacing = gw / 7;
+    const bx1 = sx + spacing * 0.5 + 3.5;
+    const bx2 = sx + spacing * 6.5 + 3.5;
+    inner += tupletBracket(bx1, bx2, cy - stemH - 5, "7", fs);
   }
 
   return staffSVG(inner, w, h);
@@ -357,10 +408,10 @@ function buildFigureSVG(key, large) {
 // ══════════════════════════════════════════
 // State
 // ══════════════════════════════════════════
-let tempo = 120;
+let tempo = 80;
 let beatsPerBar = 4;
 let barsPerFigure = 2;
-let clickMode = "quarter"; // "downbeat", "quarter", "division"
+let clickMode = "division"; // "downbeat", "quarter", "division"
 let activeFigures = new Set(["quarter","eighth","triplet","sixteenth"]);
 let randomOrder = true;
 let isPlaying = false;
@@ -419,10 +470,22 @@ function buildOptRow(containerId, options, defaultVal, onChange) {
   });
 }
 
-buildOptRow("beatsRow",
-  [2,3,4,5,6,7].map(n => ({ label: n, value: n })),
-  4, v => { beatsPerBar = v; }
-);
+// Time signature buttons (stacked numerator/denominator)
+(function buildTimeSigRow() {
+  const container = document.getElementById("beatsRow");
+  [2,3,4,5,6,7].forEach(n => {
+    const btn = document.createElement("button");
+    btn.className = "ts-btn" + (n === 4 ? " active" : "");
+    btn.innerHTML = `<span class="ts-num">${n}</span><span class="ts-line"></span><span class="ts-den">4</span>`;
+    btn.addEventListener("click", () => {
+      container.querySelectorAll(".ts-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      beatsPerBar = n;
+    });
+    container.appendChild(btn);
+  });
+})();
+
 buildOptRow("barsRow",
   [1,2,4,8].map(n => ({ label: n, value: n })),
   2, v => { barsPerFigure = v; }
@@ -433,7 +496,7 @@ buildOptRow("clickRow",
     { label: "Quarter", value: "quarter" },
     { label: "All", value: "division" },
   ],
-  "quarter", v => { clickMode = v; }
+  "division", v => { clickMode = v; }
 );
 
 // ══════════════════════════════════════════
@@ -541,39 +604,91 @@ function advanceFigure() {
   if (currentFigureIdx >= figureQueue.length) buildQueue();
 }
 
-function updatePlaybackUI() {
+// ── Timeline events: audio scheduler pushes, rAF loop reads ──
+// Each event: { time (audioCtx seconds), beat, bar, figKey, nextFigKey }
+let timeline = [];
+let lastShownIdx = -1;
+let rafId = null;
+
+// Build the playback area DOM once, then update parts in place
+function renderPlaybackShell() {
   const area = document.getElementById("playbackArea");
   const fig = currentFigure();
   const nxt = nextFigure();
 
-  let dotsHTML = '<div class="beat-dots">';
+  let dotsHTML = '<div class="beat-dots" id="beatDots">';
   for (let i = 0; i < beatsPerBar; i++) {
-    const cls = i === currentBeat ? " on" : "";
     const db = i === 0 ? " downbeat" : "";
-    dotsHTML += `<div class="beat-dot${db}${cls}"></div>`;
+    dotsHTML += `<div class="beat-dot${db}" data-beat="${i}"></div>`;
   }
   dotsHTML += '</div>';
 
   area.innerHTML =
     `<div class="now-label">Now Playing</div>` +
-    `<div class="now-figure">${buildFigureSVG(fig, true)}</div>` +
+    `<div class="now-figure" id="nowFigure">${buildFigureSVG(fig, true)}</div>` +
     dotsHTML +
-    `<div class="bar-counter">Bar ${currentBar + 1} of ${barsPerFigure}</div>` +
+    `<div class="bar-counter" id="barCounter">Bar 1 of ${barsPerFigure}</div>` +
     `<div class="next-label">Next Up</div>` +
-    `<div class="next-figure">${buildFigureSVG(nxt, false)}</div>`;
+    `<div class="next-figure" id="nextFigure">${buildFigureSVG(nxt, true)}</div>`;
 }
 
-const SCHEDULE_AHEAD = 0.1; // seconds
+// Lightweight update: just toggle dot classes and update text
+function applyVisualState(beat, bar, figKey, nextFigKey, forceRedraw) {
+  const dots = document.querySelectorAll("#beatDots .beat-dot");
+  if (dots.length !== beatsPerBar || forceRedraw) {
+    // Beats changed or figure changed — rebuild shell
+    renderPlaybackShell();
+    // Re-select dots after rebuild
+    const newDots = document.querySelectorAll("#beatDots .beat-dot");
+    newDots.forEach(d => d.classList.toggle("on", +d.dataset.beat === beat));
+    return;
+  }
+  dots.forEach(d => d.classList.toggle("on", +d.dataset.beat === beat));
+  const counter = document.getElementById("barCounter");
+  if (counter) counter.textContent = `Bar ${bar + 1} of ${barsPerFigure}`;
+  const nowFig = document.getElementById("nowFigure");
+  if (nowFig && forceRedraw) nowFig.innerHTML = buildFigureSVG(figKey, true);
+  const nxtFig = document.getElementById("nextFigure");
+  if (nxtFig && forceRedraw) nxtFig.innerHTML = buildFigureSVG(nextFigKey, true);
+}
+
+// rAF visual loop — reads audio clock, finds current timeline event
+function visualLoop() {
+  if (!isPlaying) return;
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+
+  // Find the latest event whose time has passed
+  let idx = lastShownIdx;
+  while (idx + 1 < timeline.length && timeline[idx + 1].time <= now) {
+    idx++;
+  }
+
+  if (idx >= 0 && idx !== lastShownIdx) {
+    const ev = timeline[idx];
+    const prev = lastShownIdx >= 0 ? timeline[lastShownIdx] : null;
+    const figChanged = !prev || prev.figKey !== ev.figKey;
+    applyVisualState(ev.beat, ev.bar, ev.figKey, ev.nextFigKey, figChanged);
+    lastShownIdx = idx;
+  }
+
+  // Trim old events to prevent unbounded growth (keep last 4 + future)
+  if (lastShownIdx > 8) {
+    const trim = lastShownIdx - 4;
+    timeline.splice(0, trim);
+    lastShownIdx -= trim;
+  }
+
+  rafId = requestAnimationFrame(visualLoop);
+}
+
+const SCHEDULE_AHEAD = 0.15; // seconds — schedule audio slightly ahead
 const LOOKAHEAD_MS = 25;
 
 function scheduler() {
   const ctx = getAudioCtx();
   const fig = currentFigure();
-  const divisor = FIGURES[fig].divisor; // subdivisions per bar (whole=1 means 1 per bar, etc.)
-  // divisor is per whole note; per beat = divisor / beatsPerBar...
-  // Actually divisor represents notes-per-4-beats (standard time). Let's adapt:
-  // whole=1 per 4 beats, half=2 per 4 beats, quarter=4 per 4 beats, etc.
-  // Per beat: subPerBeat = divisor / 4
+  const divisor = FIGURES[fig].divisor;
   const subPerBeat = divisor / 4;
   const beatDuration = 60.0 / tempo;
   const subDuration = beatDuration / subPerBeat;
@@ -583,7 +698,7 @@ function scheduler() {
     const isBeatStart = (currentSubdiv === 0);
     const isSubdivision = !isBeatStart;
 
-    // Decide if we click
+    // Schedule audio click
     if (clickMode === "downbeat" && isDownbeat) {
       playClick(ctx, nextNoteTime, true, false);
     } else if (clickMode === "quarter" && isBeatStart) {
@@ -592,21 +707,22 @@ function scheduler() {
       playClick(ctx, nextNoteTime, isDownbeat, isSubdivision);
     }
 
+    // Push beat-start events onto timeline for the rAF loop
+    if (isBeatStart) {
+      timeline.push({
+        time: nextNoteTime,
+        beat: currentBeat,
+        bar: currentBar,
+        figKey: currentFigure(),
+        nextFigKey: nextFigure()
+      });
+    }
+
     // Advance subdivision
     currentSubdiv++;
     if (currentSubdiv >= subPerBeat) {
       currentSubdiv = 0;
       currentBeat++;
-      // Schedule UI update on beat change
-      const beatCopy = currentBeat;
-      const barCopy = currentBar;
-      const delay = Math.max(0, (nextNoteTime - ctx.currentTime) * 1000);
-      setTimeout(() => {
-        if (!isPlaying) return;
-        // Check for beat/bar boundary before updating UI
-        updatePlaybackUI();
-      }, delay);
-
       if (currentBeat >= beatsPerBar) {
         currentBeat = 0;
         currentBar++;
@@ -628,12 +744,15 @@ function startPlayback() {
   currentBeat = 0;
   currentBar = 0;
   currentSubdiv = 0;
+  timeline = [];
+  lastShownIdx = -1;
   buildQueue();
-  nextNoteTime = ctx.currentTime + 0.1;
+  nextNoteTime = ctx.currentTime + 0.05;
 
   isPlaying = true;
-  updatePlaybackUI();
+  renderPlaybackShell();
   schedulerTimer = setInterval(scheduler, LOOKAHEAD_MS);
+  rafId = requestAnimationFrame(visualLoop);
 
   const btn = document.getElementById("transportBtn");
   btn.textContent = "■ Stop";
@@ -643,13 +762,12 @@ function startPlayback() {
 function stopPlayback() {
   isPlaying = false;
   if (schedulerTimer) { clearInterval(schedulerTimer); schedulerTimer = null; }
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 
   const btn = document.getElementById("transportBtn");
   btn.textContent = "▶ Play";
   btn.className = "play-stop-btn play";
-
-  const area = document.getElementById("playbackArea");
-  area.innerHTML = '<div class="now-label">Select figures and press Play</div>';
+  // Keep the playback area as-is so the user sees where it stopped
 }
 
 document.getElementById("transportBtn").addEventListener("click", () => {
