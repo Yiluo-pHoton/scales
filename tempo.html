@@ -117,8 +117,8 @@
 
   /* ── Now playing / Next up ── */
   .playback-area {
-    background: var(--panel); border-radius: 12px; padding: 24px;
-    text-align: center; margin-bottom: 20px; min-height: 200px;
+    background: var(--panel); border-radius: 12px; padding: 32px 24px;
+    text-align: center; margin-bottom: 20px; min-height: 280px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
   .now-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
@@ -165,6 +165,16 @@
 <h1>Rhythm Practice</h1>
 <div class="subtitle">Metronome-based rhythm trainer — practice subdivisions with staff notation.</div>
 
+<!-- Playback area (central focus) -->
+<div class="playback-area" id="playbackArea">
+  <div class="now-label">Select figures and press Play</div>
+</div>
+
+<!-- Transport -->
+<div class="transport">
+  <button class="play-stop-btn play" id="transportBtn">▶ Play</button>
+</div>
+
 <!-- Tempo -->
 <div class="tempo-section">
   <div class="tempo-label">BPM</div>
@@ -205,16 +215,6 @@
     </label>
   </div>
   <div class="figure-grid" id="figureGrid"></div>
-</div>
-
-<!-- Playback area -->
-<div class="playback-area" id="playbackArea">
-  <div class="now-label">Select figures and press Play</div>
-</div>
-
-<!-- Transport -->
-<div class="transport">
-  <button class="play-stop-btn play" id="transportBtn">▶ Play</button>
 </div>
 
 <script>
@@ -286,9 +286,9 @@ const FIGURES = {
   eighth:  { name: "♪",  divisor: 8,  label: "8th" },
   triplet: { name: "3",  divisor: 12, label: "Triplet" },
   sixteenth:{ name: "𝅘𝅥𝅯", divisor: 16, label: "16th" },
-  fivelet: { name: "5",  divisor: 20, label: "5-plet" },
-  sixlet:  { name: "6",  divisor: 24, label: "6-plet" },
-  sevenlet:{ name: "7",  divisor: 28, label: "7-plet" },
+  fivelet: { name: "5",  divisor: 20, label: "Quintuplet" },
+  sixlet:  { name: "6",  divisor: 24, label: "Sextuplet" },
+  sevenlet:{ name: "7",  divisor: 28, label: "Septuplet" },
 };
 const FIGURE_ORDER = ["whole","half","quarter","eighth","triplet","sixteenth","fivelet","sixlet","sevenlet"];
 
