@@ -31,25 +31,56 @@
   h1 { margin: 0 0 6px 0; font-size: 22px; font-weight: 600; }
   .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
 
-  /* ── Main 3-column grid ── */
+  /* ── Side setting panels ── */
+  .side-settings {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  /* ── Main grid ── */
   .main-grid {
     display: grid;
     grid-template-columns: 180px 1fr 180px;
+    grid-template-areas: "left center right";
     gap: 16px;
     margin-bottom: 20px;
     align-items: start;
   }
+  .left-settings  { grid-area: left; }
+  .center-column  { grid-area: center; }
+  .right-settings { grid-area: right; }
   @media (max-width: 720px) {
     .main-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "center center"
+        "tempo  timesig"
+        "bars   click";
+      gap: 8px;
     }
-    .side-settings { display: flex; gap: 12px; flex-wrap: wrap; }
-    .side-settings .setting-group { flex: 1; min-width: 140px; }
-  }
-
-  /* ── Side setting panels ── */
-  .side-settings {
-    display: flex; flex-direction: column; gap: 12px;
+    .left-settings  { display: contents; }
+    .right-settings { display: contents; }
+    .sg-tempo   { grid-area: tempo; }
+    .sg-timesig { grid-area: timesig; }
+    .sg-bars    { grid-area: bars; }
+    .sg-click   { grid-area: click; }
+    .sg-tempo, .sg-timesig, .sg-bars, .sg-click {
+      padding: 8px 10px;
+    }
+    .sg-tempo .setting-label, .sg-timesig .setting-label,
+    .sg-bars .setting-label, .sg-click .setting-label { font-size: 10px; margin-bottom: 5px; }
+    .sg-tempo .tempo-display { font-size: 16px; }
+    .sg-tempo .tempo-btn { width: 22px; height: 22px; font-size: 13px; }
+    .sg-tempo .tap-btn { font-size: 10px; padding: 3px 8px; }
+    .sg-timesig .ts-btn { min-width: 28px; padding: 2px 5px; }
+    .sg-timesig .ts-num, .sg-timesig .ts-den { font-size: 12px; }
+    .sg-bars .opt-btn, .sg-click .opt-btn { padding: 4px 8px; font-size: 11px; }
+    /* Make bottom row buttons 2x2 grids so both boxes match */
+    .sg-bars .setting-row, .sg-click .setting-col {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+    }
+    .sg-bars .opt-btn, .sg-click .opt-btn { width: 100%; }
+    /* Stretch rows so paired boxes match height */
+    .main-grid { align-items: stretch; }
   }
   .setting-group {
     background: var(--panel); border-radius: 8px; padding: 12px 14px;
@@ -220,8 +251,8 @@
 <div class="main-grid">
 
   <!-- Left settings -->
-  <div class="side-settings">
-    <div class="setting-group">
+  <div class="side-settings left-settings">
+    <div class="setting-group sg-tempo">
       <div class="setting-label">Tempo (BPM)</div>
       <div class="tempo-row">
         <button class="tempo-btn" id="tempoMinus5" title="-5">−</button>
@@ -235,7 +266,7 @@
         <button class="tap-btn" id="tapBtn">Tap Tempo</button>
       </div>
     </div>
-    <div class="setting-group">
+    <div class="setting-group sg-timesig">
       <div class="setting-label">Time Signature</div>
       <div class="setting-row" id="beatsRow"></div>
     </div>
@@ -252,12 +283,12 @@
   </div>
 
   <!-- Right settings -->
-  <div class="side-settings">
-    <div class="setting-group">
+  <div class="side-settings right-settings">
+    <div class="setting-group sg-bars">
       <div class="setting-label">Bars per Figure</div>
       <div class="setting-row" id="barsRow"></div>
     </div>
-    <div class="setting-group">
+    <div class="setting-group sg-click">
       <div class="setting-label">Click Sound</div>
       <div class="setting-col" id="clickRow"></div>
     </div>
@@ -361,7 +392,8 @@ const CATEGORIES = [
   { id: "A",     label: "A: 16th" },
   { id: "B",     label: "B: Triplet" },
   { id: "C",     label: "C: Sextuplet" },
-  { id: "other", label: "Other" },
+  { id: "D",     label: "D: 32nd" },
+  { id: "E",     label: "E: Quintuplet" },
 ];
 
 const FIGURES = {
@@ -377,52 +409,66 @@ const FIGURES = {
   sevenlet:  { cat: "basic", divisor: 28, label: "7-let" },
 
   // ── A: 16th-note patterns (4 subdivisions per beat) ──
-  A1:  { cat: "A", divisor: 16, hits: [1,1,1,0], label: "A-1" },
-  A2:  { cat: "A", divisor: 16, hits: [1,0,1,1], label: "A-2" },
-  A3:  { cat: "A", divisor: 16, hits: [1,1,0,1], label: "A-3" },
-  A4:  { cat: "A", divisor: 16, hits: [1,0,0,1], label: "A-4" },
-  A5:  { cat: "A", divisor: 16, hits: [1,0,0,0], label: "A-5" },
+  A1:  { cat: "A", divisor: 16, hits: [1,2,1,1], label: "A-1" },
+  A2:  { cat: "A", divisor: 16, hits: [1,1,1,2], label: "A-2" },
+  A3:  { cat: "A", divisor: 16, hits: [1,1,2,1], label: "A-3" },
+  A4:  { cat: "A", divisor: 16, hits: [1,1,1,0], label: "A-4" },
+  A5:  { cat: "A", divisor: 16, hits: [0,0,1,1], label: "A-5" },
   A6:  { cat: "A", divisor: 16, hits: [0,1,1,1], label: "A-6" },
-  A7:  { cat: "A", divisor: 16, hits: [0,1,0,1], label: "A-7" },
-  A8:  { cat: "A", divisor: 16, hits: [0,1,1,0], label: "A-8" },
-  A9:  { cat: "A", divisor: 16, hits: [0,1,0,0], label: "A-9" },
-  A10: { cat: "A", divisor: 16, hits: [0,0,1,0], label: "A-10" },
-  A11: { cat: "A", divisor: 16, hits: [1,1,0,0], label: "A-11" },
-  A12: { cat: "A", divisor: 16, hits: [0,0,1,1], label: "A-12" },
-  A13: { cat: "A", divisor: 16, hits: [0,0,0,1], label: "A-13" },
-  A14: { cat: "A", divisor: 16, hits: [1,0,1,0], label: "A-14" },
+  A7:  { cat: "A", divisor: 16, hits: [1,0,1,2], label: "A-7" },
+  A8:  { cat: "A", divisor: 16, hits: [1,0,1,1], label: "A-8" },
+  A9:  { cat: "A", divisor: 16, hits: [1,1,0,1], label: "A-9" },
+  A10: { cat: "A", divisor: 16, hits: [1,2,0,1], label: "A-10" },
+  A11: { cat: "A", divisor: 16, hits: [1,0,0,1], label: "A-11" },
+  A12: { cat: "A", divisor: 16, hits: [0,1,1,2], label: "A-12" },
+  A13: { cat: "A", divisor: 16, hits: [0,1,2,1], label: "A-13" },
+  A14: { cat: "A", divisor: 16, hits: [1,1,2,0], label: "A-14" },
   A15: { cat: "A", divisor: 16, hits: [1,0,1,0], label: "A-15" },
   A16: { cat: "A", divisor: 16, hits: [0,1,0,1], label: "A-16" },
   A17: { cat: "A", divisor: 16, hits: [0,1,1,0], label: "A-17" },
-  A18: { cat: "A", divisor: 16, hits: [1,0,0,0], label: "A-18" },
-  A19: { cat: "A", divisor: 16, hits: [0,0,0,1], label: "A-19" },
+  A18: { cat: "A", divisor: 16, hits: [1,2,2,1], label: "A-18" },
+  A19: { cat: "A", divisor: 16, hits: [1,1,2,2], label: "A-19" },
 
   // ── B: Triplet patterns (3 subdivisions per beat) ──
-  B1:  { cat: "B", divisor: 12, hits: [1,0,1], label: "B-1" },
-  B2:  { cat: "B", divisor: 12, hits: [1,1,0], label: "B-2" },
+  B1:  { cat: "B", divisor: 12, hits: [1,2,1], label: "B-1" },
+  B2:  { cat: "B", divisor: 12, hits: [1,1,2], label: "B-2" },
   B3:  { cat: "B", divisor: 12, hits: [1,1,0], label: "B-3" },
   B4:  { cat: "B", divisor: 12, hits: [0,1,1], label: "B-4" },
   B5:  { cat: "B", divisor: 12, hits: [1,0,1], label: "B-5" },
   B6:  { cat: "B", divisor: 12, hits: [1,0,0], label: "B-6" },
   B7:  { cat: "B", divisor: 12, hits: [0,0,1], label: "B-7" },
-  B8:  { cat: "B", divisor: 12, hits: [1,0,0], label: "B-8" },
-  B9:  { cat: "B", divisor: 12, hits: [0,1,0], label: "B-9" },
+  B8:  { cat: "B", divisor: 12, hits: [1,2,0], label: "B-8" },
+  B9:  { cat: "B", divisor: 12, hits: [0,1,2], label: "B-9" },
   B10: { cat: "B", divisor: 12, hits: [0,1,0], label: "B-10" },
 
   // ── C: Sextuplet patterns (6 subdivisions per beat) ──
-  C1:  { cat: "C", divisor: 24, hits: [1,0,0,1,0,0], label: "C-1" },
-  C2:  { cat: "C", divisor: 24, hits: [1,0,1,0,1,0], label: "C-2" },
-  C3:  { cat: "C", divisor: 24, hits: [1,1,1,0,0,0], label: "C-3" },
-  C4:  { cat: "C", divisor: 24, hits: [0,0,0,1,1,1], label: "C-4" },
-  C5:  { cat: "C", divisor: 24, hits: [1,0,1,1,0,1], label: "C-5" },
+  C1:  { cat: "C", divisor: 24, hits: [1,2,1,1,1,1], label: "C-1" },
+  C2:  { cat: "C", divisor: 24, hits: [1,1,1,1,1,2], label: "C-2" },
+  C3:  { cat: "C", divisor: 24, hits: [1,2,1,1,2,1], label: "C-3" },
+  C4:  { cat: "C", divisor: 24, hits: [1,1,1,1,2,1], label: "C-4" },
+  C5:  { cat: "C", divisor: 24, hits: [1,0,1,2,1,2], label: "C-5" },
+  C6:  { cat: "C", divisor: 24, hits: [1,2,1,0,1,1], label: "C-6" },
+  C7:  { cat: "C", divisor: 24, hits: [1,1,1,0,1,1], label: "C-7" },
+  C8:  { cat: "C", divisor: 24, hits: [1,1,1,1,2,2], label: "C-8" },
+  C9:  { cat: "C", divisor: 24, hits: [1,2,1,2,1,1], label: "C-9" },
 
-  // ── Other: quintuplet / septuplet patterns ──
-  O1:  { cat: "other", divisor: 20, hits: [1,0,1,0,1], label: "5a" },
-  O2:  { cat: "other", divisor: 20, hits: [1,1,0,1,0], label: "5b" },
-  O3:  { cat: "other", divisor: 20, hits: [1,0,0,1,0], label: "5c" },
-  O4:  { cat: "other", divisor: 28, hits: [1,0,1,0,1,0,1], label: "7a" },
-  O5:  { cat: "other", divisor: 28, hits: [1,1,0,1,0,1,0], label: "7b" },
-  O6:  { cat: "other", divisor: 28, hits: [1,0,0,1,0,0,1], label: "7c" },
+  // ── D: 32nd-note patterns (8 subdivisions per beat) ──
+  D1:  { cat: "D", divisor: 32, hits: [1,2,1,2,1,1,1,1], label: "D-1" },
+  D2:  { cat: "D", divisor: 32, hits: [1,1,1,1,1,2,1,2], label: "D-2" },
+  D3:  { cat: "D", divisor: 32, hits: [1,2,1,1,1,2,1,2], label: "D-3" },
+  D4:  { cat: "D", divisor: 32, hits: [1,2,1,1,1,2,1,1], label: "D-4" },
+  D5:  { cat: "D", divisor: 32, hits: [1,1,2,1,2,1,1,1], label: "D-5" },
+
+  // ── E: Quintuplet patterns (5 subdivisions per beat) ──
+  E1:  { cat: "E", divisor: 20, hits: [1,2,1,1,1], label: "E-1" },
+  E2:  { cat: "E", divisor: 20, hits: [1,1,1,1,2], label: "E-2" },
+  E3:  { cat: "E", divisor: 20, hits: [1,1,1,0,1], label: "E-3" },
+  E4:  { cat: "E", divisor: 20, hits: [1,1,1,2,1], label: "E-4" },
+  E5:  { cat: "E", divisor: 20, hits: [1,1,2,1,1], label: "E-5" },
+  E6:  { cat: "E", divisor: 20, hits: [1,1,0,1,1], label: "E-6" },
+  E7:  { cat: "E", divisor: 20, hits: [1,0,1,1,1], label: "E-7" },
+  E8:  { cat: "E", divisor: 20, hits: [1,1,2,1,2], label: "E-8" },
+
 };
 
 const FIGURE_ORDER = Object.keys(FIGURES);
@@ -432,16 +478,20 @@ const FIGURE_ORDER = Object.keys(FIGURES);
 // Parse a hit array into note/rest events with durations
 // Notes sustain until the next attack; rests fill gaps before the first attack
 function analyzeHitPattern(hits) {
-  // Each hit = single subdivision attack (dur 1); rests fill gaps between hits
+  // 1 = note attack, 2 = sustain (previous note continues), 0 = rest
   const n = hits.length, events = [];
   let i = 0;
   while (i < n) {
-    if (hits[i]) {
-      events.push({ pos: i, dur: 1, type: 'note' });
-      i++;
+    if (hits[i] === 1) {
+      // Note attack — count sustains (value 2) to get full duration
+      let dur = 1;
+      while (i + dur < n && hits[i + dur] === 2) dur++;
+      events.push({ pos: i, dur: dur, type: 'note' });
+      i += dur;
     } else {
+      // Rest (0) — count consecutive rests
       let j = i;
-      while (j < n && !hits[j]) j++;
+      while (j < n && hits[j] === 0) j++;
       events.push({ pos: i, dur: j - i, type: 'rest' });
       i = j;
     }
@@ -451,10 +501,14 @@ function analyzeHitPattern(hits) {
 
 // How many beams/flags does this note/rest duration need?
 function evBeams(dur, sub) {
-  if (sub <= 3) return dur >= 2 ? 0 : 1;
-  if (dur >= sub) return 0;      // quarter-note level
-  if (dur >= sub / 2) return 1;  // eighth-note level
-  return 2;                      // sixteenth-note level
+  // Base beam count for a single subdivision unit
+  let base;
+  if (sub <= 3) base = 1;       // triplet: 8th note level
+  else if (sub <= 6) base = 2;  // 16th note level (4, 5, 6 per beat)
+  else base = 3;                // 32nd note level (8 per beat)
+  // Each doubling of duration removes one beam
+  const reduction = Math.floor(Math.log2(dur));
+  return Math.max(0, base - reduction);
 }
 
 // Is this a dotted value? (only for sub=4, dur=3 = dotted eighth)
@@ -472,7 +526,8 @@ function restSym(cx, cy, dur, sub) {
   let codepoint;
   if (bc === 0) codepoint = 0x1D13D;      // 𝄽 quarter rest
   else if (bc === 1) codepoint = 0x1D13E; // 𝄾 eighth rest
-  else codepoint = 0x1D13F;               // 𝄿 sixteenth rest
+  else if (bc === 2) codepoint = 0x1D13F; // 𝄿 sixteenth rest
+  else codepoint = 0x1D140;               // 𝅀 thirty-second rest
   const char = String.fromCodePoint(codepoint);
   const fs = 22;
   let s = `<text x="${cx}" y="${cy+5}" font-family="'Noto Music', serif" font-size="${fs}" fill="var(--text)" text-anchor="middle">${char}</text>`;
@@ -511,7 +566,7 @@ function buildFigureSVG(key, large) {
 
   const hits = fig.hits || new Array(sub).fill(1);
   const isTuplet = [3,5,6,7].includes(sub);
-  const maxBeamLevels = sub <= 3 ? 1 : 2;
+  const maxBeamLevels = sub <= 3 ? 1 : (sub <= 6 ? 2 : 3);
   const stemTop = cy - stemH;
 
   // Analyze into note/rest events with proper durations
@@ -543,7 +598,7 @@ function buildFigureSVG(key, large) {
 
   // ── Beaming ──
   // Primary beam spans ALL beamable notes in the beat (even across rests)
-  // Secondary beams break at rests; isolated 16th notes get stubs
+  // Higher-level beams break at rests; isolated notes get stubs
   const allBeamable = positioned.filter(e => e.type === 'note' && evBeams(e.dur, sub) > 0);
 
   if (allBeamable.length === 1) {
@@ -554,30 +609,31 @@ function buildFigureSVG(key, large) {
     const bx1 = allBeamable[0].cx + 3.5, bx2 = allBeamable[allBeamable.length-1].cx + 3.5;
     inner += `<rect x="${bx1}" y="${stemTop}" width="${bx2-bx1}" height="3" class="staff-beam" rx="0.5"/>`;
 
-    // Secondary beams (16th level): group consecutive notes, breaking at rests
-    if (maxBeamLevels >= 2) {
-      const secGroups = [];
-      let curSec = [];
+    // Higher-level beams (16th, 32nd): group consecutive notes at each level
+    for (let level = 2; level <= maxBeamLevels; level++) {
+      const yOff = (level - 1) * 5;
+      const groups = [];
+      let cur = [];
       for (const ev of positioned) {
-        if (ev.type === 'note' && evBeams(ev.dur, sub) >= 2) {
-          curSec.push(ev);
+        if (ev.type === 'note' && evBeams(ev.dur, sub) >= level) {
+          cur.push(ev);
         } else {
-          if (curSec.length) { secGroups.push(curSec); curSec = []; }
+          if (cur.length) { groups.push(cur); cur = []; }
         }
       }
-      if (curSec.length) secGroups.push(curSec);
+      if (cur.length) groups.push(cur);
 
-      secGroups.forEach(sg => {
+      groups.forEach(sg => {
         if (sg.length >= 2) {
           const sx1 = sg[0].cx + 3.5, sx2 = sg[sg.length-1].cx + 3.5;
-          inner += `<rect x="${sx1}" y="${stemTop+5}" width="${sx2-sx1}" height="3" class="staff-beam" rx="0.5"/>`;
+          inner += `<rect x="${sx1}" y="${stemTop+yOff}" width="${sx2-sx1}" height="3" class="staff-beam" rx="0.5"/>`;
         } else if (sg.length === 1) {
           const stubX = sg[0].cx + 3.5;
           const idx = allBeamable.indexOf(sg[0]);
           const dir = (idx === 0) ? 1 : -1;
           const sl = 6;
           const sX = dir > 0 ? stubX : stubX - sl;
-          inner += `<rect x="${sX}" y="${stemTop+5}" width="${sl}" height="3" class="staff-beam" rx="0.5"/>`;
+          inner += `<rect x="${sX}" y="${stemTop+yOff}" width="${sl}" height="3" class="staff-beam" rx="0.5"/>`;
         }
       });
     }
@@ -729,7 +785,7 @@ function addFigButton(key) {
 
 function renderFigureGrid() {
   figureGrid.innerHTML = "";
-  const catOrder = ["basic", "A", "B", "C", "other"];
+  const catOrder = ["basic", "A", "B", "C", "D", "E"];
 
   if (currentCat === "all") {
     // Show all categories with row labels
@@ -950,7 +1006,7 @@ function scheduler() {
     const isDownbeat = (currentBeat === 0 && currentSubdiv === 0);
     const isBeatStart = (currentSubdiv === 0);
     const isSubdivision = !isBeatStart;
-    const isHit = hits[currentSubdiv % hits.length];
+    const isHit = hits[currentSubdiv % hits.length] === 1;
 
     // Schedule audio click
     if (clickMode === "downbeat" && isDownbeat) {
