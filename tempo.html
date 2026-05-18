@@ -419,59 +419,178 @@ const FIGURES = {
 
 const FIGURE_ORDER = Object.keys(FIGURES);
 
+// ── Rhythmic analysis helpers ──
+
+// Parse a hit array into note/rest events with durations
+// Notes sustain until the next attack; rests fill gaps before the first attack
+function analyzeHitPattern(hits) {
+  const n = hits.length, events = [];
+  let i = 0;
+  while (i < n) {
+    if (hits[i]) {
+      let j = i + 1;
+      while (j < n && !hits[j]) j++;
+      events.push({ pos: i, dur: j - i, type: 'note' });
+      i = j;
+    } else {
+      let j = i;
+      while (j < n && !hits[j]) j++;
+      events.push({ pos: i, dur: j - i, type: 'rest' });
+      i = j;
+    }
+  }
+  return events;
+}
+
+// How many beams/flags does this note/rest duration need?
+function evBeams(dur, sub) {
+  if (sub <= 3) return dur >= 2 ? 0 : 1;
+  if (dur >= sub) return 0;      // quarter-note level
+  if (dur >= sub / 2) return 1;  // eighth-note level
+  return 2;                      // sixteenth-note level
+}
+
+// Is this a dotted value? (only for sub=4, dur=3 = dotted eighth)
+function isDotted(dur, sub) { return sub === 4 && dur === 3; }
+
+// Draw a rest symbol at (cx, cy)
+function restSym(cx, cy, dur, sub) {
+  const dot = isDotted(dur, sub);
+  const bc = evBeams(dot ? 2 : dur, sub);
+  let s = '';
+  if (bc === 0) {
+    // Quarter rest — zigzag
+    s += `<path d="M${cx-1.5},${cy-6} l2.5,3.5 l-3.5,3 l2.5,3.5" fill="none" stroke="var(--text)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  } else if (bc === 1) {
+    // Eighth rest
+    s += `<circle cx="${cx+1}" cy="${cy-3}" r="1.5" fill="var(--text)"/>`;
+    s += `<path d="M${cx+1},${cy-3} Q${cx-1},${cy+1} ${cx-2},${cy+5}" fill="none" stroke="var(--text)" stroke-width="1.3"/>`;
+  } else {
+    // Sixteenth rest
+    s += `<circle cx="${cx+1.5}" cy="${cy-5}" r="1.3" fill="var(--text)"/>`;
+    s += `<circle cx="${cx+0.5}" cy="${cy-1}" r="1.3" fill="var(--text)"/>`;
+    s += `<path d="M${cx+1.5},${cy-5} Q${cx-1},${cy} ${cx-2},${cy+5}" fill="none" stroke="var(--text)" stroke-width="1.3"/>`;
+  }
+  if (dot) s += `<circle cx="${cx+5}" cy="${cy-1}" r="1" fill="var(--text)"/>`;
+  return s;
+}
+
+// Draw flag(s) curving from stem top
+function flagSym(stemX, stemTop, count) {
+  let s = '';
+  for (let f = 0; f < count; f++) {
+    const fy = stemTop + f * 6;
+    s += `<path d="M${stemX},${fy} q5,3 3,9" fill="none" stroke="var(--text)" stroke-width="1.5"/>`;
+  }
+  return s;
+}
+
 function buildFigureSVG(key, large) {
   const fig = FIGURES[key];
-  const sub = fig.divisor / 4; // subdivisions per beat
+  const sub = Math.round(fig.divisor / 4);
   const stemH = 22;
   const bracketH = large ? 18 : 16;
   const w = large ? 140 : 70;
   const cy = bracketH + stemH + (large ? 8 : 6);
   const h = cy + (large ? 8 : 6);
   const gw = w * 0.86;
-  const sx = w * 0.07;
+  const startX = w * 0.07;
   const fs = large ? 12 : 10;
-
   let inner = '';
 
-  // Special single-note types
-  if (key === "whole") {
-    inner += wholeNote(w/2, cy);
-  } else if (key === "half") {
-    inner += halfNote(w/2, cy);
-  } else if (key === "quarter") {
-    inner += quarterNote(w/2, cy);
-  } else if (sub >= 2) {
-    // Beamed group — works for both basic figures and patterns
-    const hits = fig.hits || new Array(Math.round(sub)).fill(1);
-    const n = hits.length;
-    const beams = sub <= 3 ? 1 : 2;
-    const isTuplet = [3,5,6,7].includes(n);
-    const spacing = gw / n;
-    const stemTop = cy - stemH;
+  // Basic single-note types
+  if (key === "whole") { return staffSVG(wholeNote(w/2, cy), w, h); }
+  if (key === "half")  { return staffSVG(halfNote(w/2, cy), w, h); }
+  if (key === "quarter") { return staffSVG(quarterNote(w/2, cy), w, h); }
+  if (sub < 2) return staffSVG('', w, h);
 
-    for (let i = 0; i < n; i++) {
-      const cx = sx + spacing * (i + 0.5);
-      if (hits[i]) {
-        inner += noteHead(cx, cy);
-      } else {
-        // Open notehead = rest position
-        inner += `<ellipse cx="${cx}" cy="${cy}" rx="3.8" ry="2.8" fill="none" stroke="var(--muted)" stroke-width="1.2" transform="rotate(-10,${cx},${cy})"/>`;
+  const hits = fig.hits || new Array(sub).fill(1);
+  const isTuplet = [3,5,6,7].includes(sub);
+  const maxBeamLevels = sub <= 3 ? 1 : 2;
+  const stemTop = cy - stemH;
+
+  // Analyze into note/rest events with proper durations
+  const events = analyzeHitPattern(hits);
+
+  // Position proportionally (longer events get more horizontal space)
+  let cum = 0;
+  const positioned = events.map(ev => {
+    const evW = (ev.dur / sub) * gw;
+    const cx = startX + (cum / sub) * gw + evW / 2;
+    cum += ev.dur;
+    return { ...ev, cx };
+  });
+
+  // ── Draw rests ──
+  positioned.filter(e => e.type === 'rest').forEach(ev => {
+    inner += restSym(ev.cx, cy, ev.dur, sub);
+  });
+
+  // ── Draw notes (noteheads + stems + dots) ──
+  const notes = positioned.filter(e => e.type === 'note');
+  notes.forEach(ev => {
+    inner += noteHead(ev.cx, cy);
+    inner += `<line x1="${ev.cx+3.5}" x2="${ev.cx+3.5}" y1="${cy}" y2="${stemTop}" class="staff-stem"/>`;
+    if (isDotted(ev.dur, sub)) {
+      inner += `<circle cx="${ev.cx+6}" cy="${cy-2}" r="1.2" fill="var(--text)"/>`;
+    }
+  });
+
+  // ── Beaming ──
+  // Group consecutive notes that need beams (beamCount > 0)
+  // Quarter-note-value notes and rests break beam groups
+  const beamGroups = [];
+  let curGroup = [];
+  for (const ev of positioned) {
+    if (ev.type === 'note' && evBeams(ev.dur, sub) > 0) {
+      curGroup.push(ev);
+    } else {
+      if (curGroup.length) { beamGroups.push(curGroup); curGroup = []; }
+    }
+  }
+  if (curGroup.length) beamGroups.push(curGroup);
+
+  beamGroups.forEach(g => {
+    if (g.length === 1) {
+      // Single note — draw flags instead of beams
+      inner += flagSym(g[0].cx + 3.5, stemTop, evBeams(g[0].dur, sub));
+    } else {
+      // Primary beam (eighth-note level) spans the whole group
+      const bx1 = g[0].cx + 3.5, bx2 = g[g.length-1].cx + 3.5;
+      inner += `<rect x="${bx1}" y="${stemTop}" width="${bx2-bx1}" height="3" class="staff-beam" rx="0.5"/>`;
+
+      // Secondary beam (sixteenth level) — only between consecutive 16th-value notes
+      if (maxBeamLevels >= 2) {
+        let i = 0;
+        while (i < g.length) {
+          if (evBeams(g[i].dur, sub) >= 2) {
+            let j = i;
+            while (j < g.length && evBeams(g[j].dur, sub) >= 2) j++;
+            if (j - i >= 2) {
+              // Full secondary beam
+              const sx1 = g[i].cx + 3.5, sx2 = g[j-1].cx + 3.5;
+              inner += `<rect x="${sx1}" y="${stemTop+5}" width="${sx2-sx1}" height="3" class="staff-beam" rx="0.5"/>`;
+            } else {
+              // Beam stub for isolated 16th
+              const stubX = g[i].cx + 3.5;
+              const dir = (i === 0) ? 1 : -1;
+              const sl = 6;
+              const sX = dir > 0 ? stubX : stubX - sl;
+              inner += `<rect x="${sX}" y="${stemTop+5}" width="${sl}" height="3" class="staff-beam" rx="0.5"/>`;
+            }
+            i = j;
+          } else { i++; }
+        }
       }
-      inner += `<line x1="${cx+3.5}" x2="${cx+3.5}" y1="${cy}" y2="${stemTop}" class="staff-stem"/>`;
     }
+  });
 
-    // Beams
-    const bx1 = sx + spacing * 0.5 + 3.5;
-    const bx2 = sx + spacing * (n - 0.5) + 3.5;
-    for (let b = 0; b < beams; b++) {
-      const by = stemTop + b * 5;
-      inner += `<rect x="${bx1}" y="${by}" width="${bx2-bx1}" height="3" class="staff-beam" rx="0.5"/>`;
-    }
-
-    // Tuplet bracket
-    if (isTuplet) {
-      inner += tupletBracket(bx1, bx2, stemTop - 5, n.toString(), fs);
-    }
+  // Tuplet bracket — spans all events (notes + rests)
+  if (isTuplet) {
+    const allCx = positioned.map(e => e.cx);
+    const tx1 = Math.min(...allCx);
+    const tx2 = Math.max(...allCx) + 3.5;
+    inner += tupletBracket(tx1, tx2, stemTop - 5, sub.toString(), fs);
   }
 
   return staffSVG(inner, w, h);
@@ -593,27 +712,42 @@ CATEGORIES.forEach(cat => {
   catTabsEl.appendChild(tab);
 });
 
+function addFigButton(key) {
+  const btn = document.createElement("button");
+  btn.className = "fig-btn" + (activeFigures.has(key) ? " active" : "");
+  btn.innerHTML = buildFigureSVG(key, false) + `<span class="fig-label">${FIGURES[key].label}</span>`;
+  btn.addEventListener("click", () => {
+    if (activeFigures.has(key)) {
+      activeFigures.delete(key);
+      btn.classList.remove("active");
+    } else {
+      activeFigures.add(key);
+      btn.classList.add("active");
+    }
+  });
+  btn.dataset.figure = key;
+  figureGrid.appendChild(btn);
+}
+
 function renderFigureGrid() {
   figureGrid.innerHTML = "";
-  const keys = FIGURE_ORDER.filter(k =>
-    currentCat === "all" || FIGURES[k].cat === currentCat
-  );
-  keys.forEach(key => {
-    const btn = document.createElement("button");
-    btn.className = "fig-btn" + (activeFigures.has(key) ? " active" : "");
-    btn.innerHTML = buildFigureSVG(key, false) + `<span class="fig-label">${FIGURES[key].label}</span>`;
-    btn.addEventListener("click", () => {
-      if (activeFigures.has(key)) {
-        activeFigures.delete(key);
-        btn.classList.remove("active");
-      } else {
-        activeFigures.add(key);
-        btn.classList.add("active");
-      }
+  const catOrder = ["basic", "A", "B", "C", "other"];
+
+  if (currentCat === "all") {
+    // Show all categories with row labels
+    catOrder.forEach((catId, ci) => {
+      const catKeys = FIGURE_ORDER.filter(k => FIGURES[k].cat === catId);
+      if (!catKeys.length) return;
+      const lbl = document.createElement("div");
+      const info = CATEGORIES.find(c => c.id === catId);
+      lbl.textContent = info ? info.label : catId;
+      lbl.style.cssText = `width:100%;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-top:${ci ? 10 : 0}px;margin-bottom:2px;`;
+      figureGrid.appendChild(lbl);
+      catKeys.forEach(addFigButton);
     });
-    btn.dataset.figure = key;
-    figureGrid.appendChild(btn);
-  });
+  } else {
+    FIGURE_ORDER.filter(k => FIGURES[k].cat === currentCat).forEach(addFigButton);
+  }
 }
 renderFigureGrid();
 
