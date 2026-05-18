@@ -177,6 +177,19 @@
   .fig-btn svg { width: 68px; height: 44px; }
   .fig-btn .fig-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
   .fig-btn.active .fig-label { color: var(--accent); }
+
+  /* ── Category tabs ── */
+  .cat-tabs {
+    display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .cat-tab {
+    padding: 5px 11px; background: #333; color: var(--muted);
+    border: 1px solid #444; border-radius: 6px; cursor: pointer;
+    font-size: 11px; transition: all 0.15s;
+  }
+  .cat-tab:hover { border-color: #666; color: var(--text); }
+  .cat-tab.active { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+
   .fig-select-row {
     display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
   }
@@ -255,6 +268,7 @@
 <div class="figures-section">
   <div class="setting-label">Rhythmic Figures</div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Select which rhythms to practice. Active figures will cycle during playback.</div>
+  <div class="cat-tabs" id="catTabs"></div>
   <div class="fig-select-row">
     <button class="fig-select-btn" id="figAll">All</button>
     <button class="fig-select-btn" id="figNone">None</button>
@@ -339,68 +353,125 @@ function tupletBracket(x1, x2, y, num, fontSize) {
 
 // Build notation SVGs for each figure
 // Each returns an SVG string
+// ── Categories ──
+const CATEGORIES = [
+  { id: "all",   label: "All" },
+  { id: "basic", label: "Basic" },
+  { id: "A",     label: "A: 16th" },
+  { id: "B",     label: "B: Triplet" },
+  { id: "C",     label: "C: Sextuplet" },
+  { id: "other", label: "Other" },
+];
+
 const FIGURES = {
-  whole:   { name: "1",  divisor: 1,  label: "Whole" },
-  half:    { name: "½",  divisor: 2,  label: "Half" },
-  quarter: { name: "♩",  divisor: 4,  label: "Quarter" },
-  eighth:  { name: "♪",  divisor: 8,  label: "8th" },
-  triplet: { name: "3",  divisor: 12, label: "Triplet" },
-  sixteenth:{ name: "𝅘𝅥𝅯", divisor: 16, label: "16th" },
-  fivelet: { name: "5",  divisor: 20, label: "Quintuplet" },
-  sixlet:  { name: "6",  divisor: 24, label: "Sextuplet" },
-  sevenlet:{ name: "7",  divisor: 28, label: "Septuplet" },
+  // ── Basic figures ──
+  whole:     { cat: "basic", divisor: 1,  label: "Whole" },
+  half:      { cat: "basic", divisor: 2,  label: "Half" },
+  quarter:   { cat: "basic", divisor: 4,  label: "Quarter" },
+  eighth:    { cat: "basic", divisor: 8,  label: "8th" },
+  triplet:   { cat: "basic", divisor: 12, label: "Triplet" },
+  sixteenth: { cat: "basic", divisor: 16, label: "16th" },
+  fivelet:   { cat: "basic", divisor: 20, label: "5-let" },
+  sixlet:    { cat: "basic", divisor: 24, label: "6-let" },
+  sevenlet:  { cat: "basic", divisor: 28, label: "7-let" },
+
+  // ── A: 16th-note patterns (4 subdivisions per beat) ──
+  A1:  { cat: "A", divisor: 16, hits: [1,1,1,0], label: "A-1" },
+  A2:  { cat: "A", divisor: 16, hits: [1,0,1,1], label: "A-2" },
+  A3:  { cat: "A", divisor: 16, hits: [1,1,0,1], label: "A-3" },
+  A4:  { cat: "A", divisor: 16, hits: [1,0,0,1], label: "A-4" },
+  A5:  { cat: "A", divisor: 16, hits: [1,0,0,0], label: "A-5" },
+  A6:  { cat: "A", divisor: 16, hits: [0,1,1,1], label: "A-6" },
+  A7:  { cat: "A", divisor: 16, hits: [0,1,0,1], label: "A-7" },
+  A8:  { cat: "A", divisor: 16, hits: [0,1,1,0], label: "A-8" },
+  A9:  { cat: "A", divisor: 16, hits: [0,1,0,0], label: "A-9" },
+  A10: { cat: "A", divisor: 16, hits: [0,0,1,0], label: "A-10" },
+  A11: { cat: "A", divisor: 16, hits: [1,1,0,0], label: "A-11" },
+  A12: { cat: "A", divisor: 16, hits: [0,0,1,1], label: "A-12" },
+  A13: { cat: "A", divisor: 16, hits: [0,0,0,1], label: "A-13" },
+  A14: { cat: "A", divisor: 16, hits: [1,0,1,0], label: "A-14" },
+  A15: { cat: "A", divisor: 16, hits: [1,1,1,1], label: "A-15" },
+
+  // ── B: Triplet patterns (3 subdivisions per beat) ──
+  B1:  { cat: "B", divisor: 12, hits: [1,0,1], label: "B-1" },
+  B2:  { cat: "B", divisor: 12, hits: [1,1,0], label: "B-2" },
+  B3:  { cat: "B", divisor: 12, hits: [1,1,1], label: "B-3" },
+  B4:  { cat: "B", divisor: 12, hits: [0,0,1], label: "B-4" },
+  B5:  { cat: "B", divisor: 12, hits: [0,1,0], label: "B-5" },
+  B6:  { cat: "B", divisor: 12, hits: [1,0,0], label: "B-6" },
+  B7:  { cat: "B", divisor: 12, hits: [0,1,1], label: "B-7" },
+
+  // ── C: Sextuplet patterns (6 subdivisions per beat) ──
+  C1:  { cat: "C", divisor: 24, hits: [1,0,0,1,0,0], label: "C-1" },
+  C2:  { cat: "C", divisor: 24, hits: [1,0,1,0,1,0], label: "C-2" },
+  C3:  { cat: "C", divisor: 24, hits: [1,1,1,0,0,0], label: "C-3" },
+  C4:  { cat: "C", divisor: 24, hits: [0,0,0,1,1,1], label: "C-4" },
+  C5:  { cat: "C", divisor: 24, hits: [1,0,1,1,0,1], label: "C-5" },
+
+  // ── Other: quintuplet / septuplet patterns ──
+  O1:  { cat: "other", divisor: 20, hits: [1,0,1,0,1], label: "5a" },
+  O2:  { cat: "other", divisor: 20, hits: [1,1,0,1,0], label: "5b" },
+  O3:  { cat: "other", divisor: 20, hits: [1,0,0,1,0], label: "5c" },
+  O4:  { cat: "other", divisor: 28, hits: [1,0,1,0,1,0,1], label: "7a" },
+  O5:  { cat: "other", divisor: 28, hits: [1,1,0,1,0,1,0], label: "7b" },
+  O6:  { cat: "other", divisor: 28, hits: [1,0,0,1,0,0,1], label: "7c" },
 };
-const FIGURE_ORDER = ["whole","half","quarter","eighth","triplet","sixteenth","fivelet","sixlet","sevenlet"];
+
+const FIGURE_ORDER = Object.keys(FIGURES);
 
 function buildFigureSVG(key, large) {
-  // No staff lines — just noteheads, stems, beams, and brackets
-  // All figures use the same viewBox so noteheads align across buttons
+  const fig = FIGURES[key];
+  const sub = fig.divisor / 4; // subdivisions per beat
   const stemH = 22;
-  const bracketH = large ? 18 : 16; // always reserve space for bracket
+  const bracketH = large ? 18 : 16;
   const w = large ? 140 : 70;
-  const cy = bracketH + stemH + (large ? 8 : 6); // notehead y — same for all
+  const cy = bracketH + stemH + (large ? 8 : 6);
   const h = cy + (large ? 8 : 6);
   const gw = w * 0.86;
   const sx = w * 0.07;
   const fs = large ? 12 : 10;
-  const isTuplet = ["triplet","fivelet","sixlet","sevenlet"].includes(key);
 
   let inner = '';
 
+  // Special single-note types
   if (key === "whole") {
     inner += wholeNote(w/2, cy);
   } else if (key === "half") {
     inner += halfNote(w/2, cy);
   } else if (key === "quarter") {
     inner += quarterNote(w/2, cy);
-  } else if (key === "eighth") {
-    inner += beamedGroup(sx, cy, 2, 1, gw);
-  } else if (key === "triplet") {
-    inner += beamedGroup(sx, cy, 3, 1, gw);
-    const spacing = gw / 3;
+  } else if (sub >= 2) {
+    // Beamed group — works for both basic figures and patterns
+    const hits = fig.hits || new Array(Math.round(sub)).fill(1);
+    const n = hits.length;
+    const beams = sub <= 3 ? 1 : 2;
+    const isTuplet = [3,5,6,7].includes(n);
+    const spacing = gw / n;
+    const stemTop = cy - stemH;
+
+    for (let i = 0; i < n; i++) {
+      const cx = sx + spacing * (i + 0.5);
+      if (hits[i]) {
+        inner += noteHead(cx, cy);
+      } else {
+        // Open notehead = rest position
+        inner += `<ellipse cx="${cx}" cy="${cy}" rx="3.8" ry="2.8" fill="none" stroke="var(--muted)" stroke-width="1.2" transform="rotate(-10,${cx},${cy})"/>`;
+      }
+      inner += `<line x1="${cx+3.5}" x2="${cx+3.5}" y1="${cy}" y2="${stemTop}" class="staff-stem"/>`;
+    }
+
+    // Beams
     const bx1 = sx + spacing * 0.5 + 3.5;
-    const bx2 = sx + spacing * 2.5 + 3.5;
-    inner += tupletBracket(bx1, bx2, cy - stemH - 5, "3", fs);
-  } else if (key === "sixteenth") {
-    inner += beamedGroup(sx, cy, 4, 2, gw);
-  } else if (key === "fivelet") {
-    inner += beamedGroup(sx, cy, 5, 2, gw);
-    const spacing = gw / 5;
-    const bx1 = sx + spacing * 0.5 + 3.5;
-    const bx2 = sx + spacing * 4.5 + 3.5;
-    inner += tupletBracket(bx1, bx2, cy - stemH - 5, "5", fs);
-  } else if (key === "sixlet") {
-    inner += beamedGroup(sx, cy, 6, 2, gw);
-    const spacing = gw / 6;
-    const bx1 = sx + spacing * 0.5 + 3.5;
-    const bx2 = sx + spacing * 5.5 + 3.5;
-    inner += tupletBracket(bx1, bx2, cy - stemH - 5, "6", fs);
-  } else if (key === "sevenlet") {
-    inner += beamedGroup(sx, cy, 7, 2, gw);
-    const spacing = gw / 7;
-    const bx1 = sx + spacing * 0.5 + 3.5;
-    const bx2 = sx + spacing * 6.5 + 3.5;
-    inner += tupletBracket(bx1, bx2, cy - stemH - 5, "7", fs);
+    const bx2 = sx + spacing * (n - 0.5) + 3.5;
+    for (let b = 0; b < beams; b++) {
+      const by = stemTop + b * 5;
+      inner += `<rect x="${bx1}" y="${by}" width="${bx2-bx1}" height="3" class="staff-beam" rx="0.5"/>`;
+    }
+
+    // Tuplet bracket
+    if (isTuplet) {
+      inner += tupletBracket(bx1, bx2, stemTop - 5, n.toString(), fs);
+    }
   }
 
   return staffSVG(inner, w, h);
@@ -502,33 +573,63 @@ buildOptRow("clickRow",
 );
 
 // ══════════════════════════════════════════
-// Figure buttons
+// Category tabs + figure buttons
 // ══════════════════════════════════════════
+let currentCat = "all";
+const catTabsEl = document.getElementById("catTabs");
 const figureGrid = document.getElementById("figureGrid");
 
-FIGURE_ORDER.forEach(key => {
-  const btn = document.createElement("button");
-  btn.className = "fig-btn" + (activeFigures.has(key) ? " active" : "");
-  btn.innerHTML = buildFigureSVG(key, false) + `<span class="fig-label">${FIGURES[key].label}</span>`;
-  btn.addEventListener("click", () => {
-    if (activeFigures.has(key)) {
-      activeFigures.delete(key);
-      btn.classList.remove("active");
-    } else {
-      activeFigures.add(key);
-      btn.classList.add("active");
-    }
+// Build category tabs
+CATEGORIES.forEach(cat => {
+  const tab = document.createElement("button");
+  tab.className = "cat-tab" + (cat.id === "all" ? " active" : "");
+  tab.textContent = cat.label;
+  tab.addEventListener("click", () => {
+    currentCat = cat.id;
+    catTabsEl.querySelectorAll(".cat-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    renderFigureGrid();
   });
-  btn.dataset.figure = key;
-  figureGrid.appendChild(btn);
+  catTabsEl.appendChild(tab);
 });
 
+function renderFigureGrid() {
+  figureGrid.innerHTML = "";
+  const keys = FIGURE_ORDER.filter(k =>
+    currentCat === "all" || FIGURES[k].cat === currentCat
+  );
+  keys.forEach(key => {
+    const btn = document.createElement("button");
+    btn.className = "fig-btn" + (activeFigures.has(key) ? " active" : "");
+    btn.innerHTML = buildFigureSVG(key, false) + `<span class="fig-label">${FIGURES[key].label}</span>`;
+    btn.addEventListener("click", () => {
+      if (activeFigures.has(key)) {
+        activeFigures.delete(key);
+        btn.classList.remove("active");
+      } else {
+        activeFigures.add(key);
+        btn.classList.add("active");
+      }
+    });
+    btn.dataset.figure = key;
+    figureGrid.appendChild(btn);
+  });
+}
+renderFigureGrid();
+
+// All / None affect visible category
 document.getElementById("figAll").addEventListener("click", () => {
-  FIGURE_ORDER.forEach(k => activeFigures.add(k));
+  const keys = FIGURE_ORDER.filter(k =>
+    currentCat === "all" || FIGURES[k].cat === currentCat
+  );
+  keys.forEach(k => activeFigures.add(k));
   figureGrid.querySelectorAll(".fig-btn").forEach(b => b.classList.add("active"));
 });
 document.getElementById("figNone").addEventListener("click", () => {
-  activeFigures.clear();
+  const keys = FIGURE_ORDER.filter(k =>
+    currentCat === "all" || FIGURES[k].cat === currentCat
+  );
+  keys.forEach(k => activeFigures.delete(k));
   figureGrid.querySelectorAll(".fig-btn").forEach(b => b.classList.remove("active"));
 });
 document.getElementById("randomToggle").addEventListener("change", e => {
@@ -707,22 +808,24 @@ const LOOKAHEAD_MS = 25;
 function scheduler() {
   const ctx = getAudioCtx();
   const fig = currentFigure();
-  const divisor = FIGURES[fig].divisor;
-  const subPerBeat = divisor / 4;
+  const figData = FIGURES[fig];
+  const subPerBeat = figData.divisor / 4;
   const beatDuration = 60.0 / tempo;
   const subDuration = beatDuration / subPerBeat;
+  const hits = figData.hits || new Array(Math.max(1, Math.round(subPerBeat))).fill(1);
 
   while (nextNoteTime < ctx.currentTime + SCHEDULE_AHEAD) {
     const isDownbeat = (currentBeat === 0 && currentSubdiv === 0);
     const isBeatStart = (currentSubdiv === 0);
     const isSubdivision = !isBeatStart;
+    const isHit = hits[currentSubdiv % hits.length];
 
-    // Schedule audio click (skip entirely for "none" mode)
+    // Schedule audio click
     if (clickMode === "downbeat" && isDownbeat) {
       playClick(ctx, nextNoteTime, true, false);
     } else if (clickMode === "quarter" && isBeatStart) {
       playClick(ctx, nextNoteTime, isDownbeat, false);
-    } else if (clickMode === "division") {
+    } else if (clickMode === "division" && isHit) {
       playClick(ctx, nextNoteTime, isDownbeat, isSubdivision);
     }
     // clickMode === "none" → no audio, visual only
