@@ -493,6 +493,7 @@ buildOptRow("barsRow",
 );
 buildOptRow("clickRow",
   [
+    { label: "None", value: "none" },
     { label: "Downbeat", value: "downbeat" },
     { label: "Quarter", value: "quarter" },
     { label: "All", value: "division" },
@@ -577,32 +578,49 @@ function getActiveList() {
   return list.length > 0 ? list : ["quarter"];
 }
 
+let nextQueue = []; // pre-built next queue so nextFigure() is always accurate
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 function buildQueue() {
   const list = getActiveList();
-  if (randomOrder) {
-    // Shuffle
-    figureQueue = list.slice();
-    for (let i = figureQueue.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [figureQueue[i], figureQueue[j]] = [figureQueue[j], figureQueue[i]];
-    }
-  } else {
-    figureQueue = list.slice();
-  }
+  figureQueue = randomOrder ? shuffleArray(list.slice()) : list.slice();
   currentFigureIdx = 0;
+  buildNextQueue();
+}
+
+function buildNextQueue() {
+  const list = getActiveList();
+  nextQueue = randomOrder ? shuffleArray(list.slice()) : list.slice();
 }
 
 function currentFigure() {
   if (figureQueue.length === 0) buildQueue();
-  return figureQueue[currentFigureIdx % figureQueue.length];
+  return figureQueue[currentFigureIdx];
 }
 function nextFigure() {
   if (figureQueue.length === 0) buildQueue();
-  return figureQueue[(currentFigureIdx + 1) % figureQueue.length];
+  if (currentFigureIdx + 1 < figureQueue.length) {
+    return figureQueue[currentFigureIdx + 1];
+  }
+  // Next figure crosses into the pre-built next queue
+  if (nextQueue.length === 0) buildNextQueue();
+  return nextQueue[0];
 }
 function advanceFigure() {
   currentFigureIdx++;
-  if (currentFigureIdx >= figureQueue.length) buildQueue();
+  if (currentFigureIdx >= figureQueue.length) {
+    // Transition to the pre-built next queue (which nextFigure() already peeked into)
+    figureQueue = nextQueue;
+    currentFigureIdx = 0;
+    buildNextQueue();
+  }
 }
 
 // ── Timeline events: audio scheduler pushes, rAF loop reads ──
@@ -699,7 +717,7 @@ function scheduler() {
     const isBeatStart = (currentSubdiv === 0);
     const isSubdivision = !isBeatStart;
 
-    // Schedule audio click
+    // Schedule audio click (skip entirely for "none" mode)
     if (clickMode === "downbeat" && isDownbeat) {
       playClick(ctx, nextNoteTime, true, false);
     } else if (clickMode === "quarter" && isBeatStart) {
@@ -707,6 +725,7 @@ function scheduler() {
     } else if (clickMode === "division") {
       playClick(ctx, nextNoteTime, isDownbeat, isSubdivision);
     }
+    // clickMode === "none" → no audio, visual only
 
     // Push beat-start events onto timeline for the rAF loop
     if (isBeatStart) {
