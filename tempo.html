@@ -391,7 +391,11 @@ const FIGURES = {
   A12: { cat: "A", divisor: 16, hits: [0,0,1,1], label: "A-12" },
   A13: { cat: "A", divisor: 16, hits: [0,0,0,1], label: "A-13" },
   A14: { cat: "A", divisor: 16, hits: [1,0,1,0], label: "A-14" },
-  A15: { cat: "A", divisor: 16, hits: [1,1,1,1], label: "A-15" },
+  A15: { cat: "A", divisor: 16, hits: [1,0,1,0], label: "A-15" },
+  A16: { cat: "A", divisor: 16, hits: [0,1,0,1], label: "A-16" },
+  A17: { cat: "A", divisor: 16, hits: [0,1,1,0], label: "A-17" },
+  A18: { cat: "A", divisor: 16, hits: [1,0,0,0], label: "A-18" },
+  A19: { cat: "A", divisor: 16, hits: [0,0,0,1], label: "A-19" },
 
   // ── B: Triplet patterns (3 subdivisions per beat) ──
   B1:  { cat: "B", divisor: 12, hits: [1,0,1], label: "B-1" },
@@ -425,14 +429,13 @@ const FIGURE_ORDER = Object.keys(FIGURES);
 // Parse a hit array into note/rest events with durations
 // Notes sustain until the next attack; rests fill gaps before the first attack
 function analyzeHitPattern(hits) {
+  // Each hit = single subdivision attack (dur 1); rests fill gaps between hits
   const n = hits.length, events = [];
   let i = 0;
   while (i < n) {
     if (hits[i]) {
-      let j = i + 1;
-      while (j < n && !hits[j]) j++;
-      events.push({ pos: i, dur: j - i, type: 'note' });
-      i = j;
+      events.push({ pos: i, dur: 1, type: 'note' });
+      i++;
     } else {
       let j = i;
       while (j < n && !hits[j]) j++;
@@ -536,53 +539,46 @@ function buildFigureSVG(key, large) {
   });
 
   // ── Beaming ──
-  // Group consecutive notes that need beams (beamCount > 0)
-  // Quarter-note-value notes and rests break beam groups
-  const beamGroups = [];
-  let curGroup = [];
-  for (const ev of positioned) {
-    if (ev.type === 'note' && evBeams(ev.dur, sub) > 0) {
-      curGroup.push(ev);
-    } else {
-      if (curGroup.length) { beamGroups.push(curGroup); curGroup = []; }
-    }
-  }
-  if (curGroup.length) beamGroups.push(curGroup);
+  // Primary beam spans ALL beamable notes in the beat (even across rests)
+  // Secondary beams break at rests; isolated 16th notes get stubs
+  const allBeamable = positioned.filter(e => e.type === 'note' && evBeams(e.dur, sub) > 0);
 
-  beamGroups.forEach(g => {
-    if (g.length === 1) {
-      // Single note — draw flags instead of beams
-      inner += flagSym(g[0].cx + 3.5, stemTop, evBeams(g[0].dur, sub));
-    } else {
-      // Primary beam (eighth-note level) spans the whole group
-      const bx1 = g[0].cx + 3.5, bx2 = g[g.length-1].cx + 3.5;
-      inner += `<rect x="${bx1}" y="${stemTop}" width="${bx2-bx1}" height="3" class="staff-beam" rx="0.5"/>`;
+  if (allBeamable.length === 1) {
+    // Single beamable note → draw flags
+    inner += flagSym(allBeamable[0].cx + 3.5, stemTop, evBeams(allBeamable[0].dur, sub));
+  } else if (allBeamable.length >= 2) {
+    // Primary beam (8th-note level) spans all notes
+    const bx1 = allBeamable[0].cx + 3.5, bx2 = allBeamable[allBeamable.length-1].cx + 3.5;
+    inner += `<rect x="${bx1}" y="${stemTop}" width="${bx2-bx1}" height="3" class="staff-beam" rx="0.5"/>`;
 
-      // Secondary beam (sixteenth level) — only between consecutive 16th-value notes
-      if (maxBeamLevels >= 2) {
-        let i = 0;
-        while (i < g.length) {
-          if (evBeams(g[i].dur, sub) >= 2) {
-            let j = i;
-            while (j < g.length && evBeams(g[j].dur, sub) >= 2) j++;
-            if (j - i >= 2) {
-              // Full secondary beam
-              const sx1 = g[i].cx + 3.5, sx2 = g[j-1].cx + 3.5;
-              inner += `<rect x="${sx1}" y="${stemTop+5}" width="${sx2-sx1}" height="3" class="staff-beam" rx="0.5"/>`;
-            } else {
-              // Beam stub for isolated 16th
-              const stubX = g[i].cx + 3.5;
-              const dir = (i === 0) ? 1 : -1;
-              const sl = 6;
-              const sX = dir > 0 ? stubX : stubX - sl;
-              inner += `<rect x="${sX}" y="${stemTop+5}" width="${sl}" height="3" class="staff-beam" rx="0.5"/>`;
-            }
-            i = j;
-          } else { i++; }
+    // Secondary beams (16th level): group consecutive notes, breaking at rests
+    if (maxBeamLevels >= 2) {
+      const secGroups = [];
+      let curSec = [];
+      for (const ev of positioned) {
+        if (ev.type === 'note' && evBeams(ev.dur, sub) >= 2) {
+          curSec.push(ev);
+        } else {
+          if (curSec.length) { secGroups.push(curSec); curSec = []; }
         }
       }
+      if (curSec.length) secGroups.push(curSec);
+
+      secGroups.forEach(sg => {
+        if (sg.length >= 2) {
+          const sx1 = sg[0].cx + 3.5, sx2 = sg[sg.length-1].cx + 3.5;
+          inner += `<rect x="${sx1}" y="${stemTop+5}" width="${sx2-sx1}" height="3" class="staff-beam" rx="0.5"/>`;
+        } else if (sg.length === 1) {
+          const stubX = sg[0].cx + 3.5;
+          const idx = allBeamable.indexOf(sg[0]);
+          const dir = (idx === 0) ? 1 : -1;
+          const sl = 6;
+          const sX = dir > 0 ? stubX : stubX - sl;
+          inner += `<rect x="${sX}" y="${stemTop+5}" width="${sl}" height="3" class="staff-beam" rx="0.5"/>`;
+        }
+      });
     }
-  });
+  }
 
   // Tuplet bracket — spans all events (notes + rests)
   if (isTuplet) {
