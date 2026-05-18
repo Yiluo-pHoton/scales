@@ -404,9 +404,9 @@ const FIGURES = {
   eighth:    { cat: "basic", divisor: 8,  label: "8th" },
   triplet:   { cat: "basic", divisor: 12, label: "Triplet" },
   sixteenth: { cat: "basic", divisor: 16, label: "16th" },
-  fivelet:   { cat: "basic", divisor: 20, label: "5-let" },
-  sixlet:    { cat: "basic", divisor: 24, label: "6-let" },
-  sevenlet:  { cat: "basic", divisor: 28, label: "7-let" },
+  fivelet:   { cat: "basic", divisor: 20, label: "Quintuplet" },
+  sixlet:    { cat: "basic", divisor: 24, label: "Sextuplet" },
+  sevenlet:  { cat: "basic", divisor: 28, label: "Septuplet" },
 
   // ── A: 16th-note patterns (4 subdivisions per beat) ──
   A1:  { cat: "A", divisor: 16, hits: [1,2,1,1], label: "A-1" },
@@ -657,7 +657,7 @@ let tempo = 80;
 let beatsPerBar = 4;
 let barsPerFigure = 2;
 let clickMode = "division"; // "downbeat", "quarter", "division"
-let activeFigures = new Set(["quarter","eighth","triplet","sixteenth"]);
+let activeFigures = new Set(["quarter","eighth","triplet","sixteenth","fivelet","sixlet"]);
 let randomOrder = true;
 let isPlaying = false;
 let audioCtx = null;
