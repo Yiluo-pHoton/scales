@@ -470,7 +470,7 @@ function restSym(cx, cy, dur, sub) {
   const char = String.fromCodePoint(codepoint);
   const fs = 22;
   let s = `<text x="${cx}" y="${cy+5}" font-family="'Noto Music', serif" font-size="${fs}" fill="var(--text)" text-anchor="middle">${char}</text>`;
-  if (dot) s += `<circle cx="${cx+9}" cy="${cy}" r="1.5" fill="var(--text)"/>`;
+  if (dot) s += `<circle cx="${cx+9}" cy="${cy-4}" r="1.5" fill="var(--text)"/>`;
   return s;
 }
 
