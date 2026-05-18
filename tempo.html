@@ -454,24 +454,41 @@ function evBeams(dur, sub) {
 function isDotted(dur, sub) { return sub === 4 && dur === 3; }
 
 // Draw a rest symbol at (cx, cy)
+// Modelled after standard engraved music rests:
+//   Quarter rest: zigzag / lightning-bolt shape
+//   Eighth rest:  filled flag-dot at top + diagonal stem going down-left
+//   Sixteenth rest: two flag-dots + longer diagonal stem
 function restSym(cx, cy, dur, sub) {
   const dot = isDotted(dur, sub);
   const bc = evBeams(dot ? 2 : dur, sub);
   let s = '';
   if (bc === 0) {
-    // Quarter rest — zigzag
-    s += `<path d="M${cx-1.5},${cy-6} l2.5,3.5 l-3.5,3 l2.5,3.5" fill="none" stroke="var(--text)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    // Quarter rest — classic filled zigzag glyph
+    const x = cx, y = cy;
+    s += `<path d="M${x+2},${y-9} l-4,5 l6,3 l-6,4 q0,3 3,3 q-1.5,-0.5 -1,-2.5"
+          fill="none" stroke="var(--text)" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"/>`;
   } else if (bc === 1) {
-    // Eighth rest
-    s += `<circle cx="${cx+1}" cy="${cy-3}" r="1.5" fill="var(--text)"/>`;
-    s += `<path d="M${cx+1},${cy-3} Q${cx-1},${cy+1} ${cx-2},${cy+5}" fill="none" stroke="var(--text)" stroke-width="1.3"/>`;
+    // Eighth rest — filled dot + hook + diagonal stem
+    const tx = cx, ty = cy;
+    s += `<line x1="${tx+1}" y1="${ty-4}" x2="${tx-3}" y2="${ty+6}"
+          stroke="var(--text)" stroke-width="1.5" stroke-linecap="round"/>`;
+    s += `<circle cx="${tx+1}" cy="${ty-4}" r="1.7" fill="var(--text)"/>`;
+    s += `<path d="M${tx+2.5},${ty-5} q2.5,0.5 1.5,3"
+          stroke="var(--text)" stroke-width="1.3" fill="none" stroke-linecap="round"/>`;
   } else {
-    // Sixteenth rest
-    s += `<circle cx="${cx+1.5}" cy="${cy-5}" r="1.3" fill="var(--text)"/>`;
-    s += `<circle cx="${cx+0.5}" cy="${cy-1}" r="1.3" fill="var(--text)"/>`;
-    s += `<path d="M${cx+1.5},${cy-5} Q${cx-1},${cy} ${cx-2},${cy+5}" fill="none" stroke="var(--text)" stroke-width="1.3"/>`;
+    // Sixteenth rest — two filled dots + hooks + diagonal stem
+    const tx = cx, ty = cy;
+    s += `<line x1="${tx+2}" y1="${ty-7}" x2="${tx-3}" y2="${ty+6}"
+          stroke="var(--text)" stroke-width="1.5" stroke-linecap="round"/>`;
+    s += `<circle cx="${tx+2}" cy="${ty-7}" r="1.5" fill="var(--text)"/>`;
+    s += `<path d="M${tx+3.3},${ty-8} q2.5,0.5 1.5,3"
+          stroke="var(--text)" stroke-width="1.2" fill="none" stroke-linecap="round"/>`;
+    s += `<circle cx="${tx+0.5}" cy="${ty-2}" r="1.5" fill="var(--text)"/>`;
+    s += `<path d="M${tx+1.8},${ty-3} q2.5,0.5 1.5,3"
+          stroke="var(--text)" stroke-width="1.2" fill="none" stroke-linecap="round"/>`;
   }
-  if (dot) s += `<circle cx="${cx+5}" cy="${cy-1}" r="1" fill="var(--text)"/>`;
+  if (dot) s += `<circle cx="${cx+7}" cy="${cy}" r="1.2" fill="var(--text)"/>`;
   return s;
 }
 
