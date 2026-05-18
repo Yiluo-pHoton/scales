@@ -836,24 +836,30 @@ function getAudioCtx() {
   return audioCtx;
 }
 
-function playClick(ctx, time, isDownbeat, isSubdivision) {
+function playClick(ctx, time, isDownbeat, isSubdivision, durSec) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain).connect(ctx.destination);
 
+  // durSec = total note duration in seconds (attack + sustain)
+  const d = durSec || 0.05;
+  const release = Math.min(0.04, d * 0.3);  // short fade-out at end
+  const sustain = Math.max(0.01, d - release);
+
+  let vol;
   if (isDownbeat) {
-    osc.frequency.value = 1500;
-    gain.gain.setValueAtTime(0.5, time);
+    osc.frequency.value = 880; vol = 0.5;    // A5
   } else if (isSubdivision) {
-    osc.frequency.value = 600;
-    gain.gain.setValueAtTime(0.12, time);
+    osc.frequency.value = 329.63; vol = 0.12; // E4
   } else {
-    osc.frequency.value = 1000;
-    gain.gain.setValueAtTime(0.3, time);
+    osc.frequency.value = 392; vol = 0.3;     // G4
   }
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+  // Hold level then fade out
+  gain.gain.setValueAtTime(vol, time);
+  gain.gain.setValueAtTime(vol, time + sustain);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + sustain + release);
   osc.start(time);
-  osc.stop(time + 0.05);
+  osc.stop(time + sustain + release + 0.01);
 }
 
 // ══════════════════════════════════════════
@@ -1012,13 +1018,21 @@ function scheduler() {
     const isSubdivision = !isBeatStart;
     const isHit = hits[currentSubdiv % hits.length] === 1;
 
+    // Compute note duration in subdivisions (count sustains after attack)
+    let noteDurSubs = 1;
+    if (isHit) {
+      const idx = currentSubdiv % hits.length;
+      while (idx + noteDurSubs < hits.length && hits[idx + noteDurSubs] === 2) noteDurSubs++;
+    }
+    const noteDurSec = noteDurSubs * subDuration;
+
     // Schedule audio click
     if (clickMode === "downbeat" && isDownbeat) {
-      playClick(ctx, nextNoteTime, true, false);
+      playClick(ctx, nextNoteTime, true, false, beatDuration * beatsPerBar);
     } else if (clickMode === "quarter" && isBeatStart) {
-      playClick(ctx, nextNoteTime, isDownbeat, false);
+      playClick(ctx, nextNoteTime, isDownbeat, false, beatDuration);
     } else if (clickMode === "division" && isHit) {
-      playClick(ctx, nextNoteTime, isDownbeat, isSubdivision);
+      playClick(ctx, nextNoteTime, isDownbeat, isSubdivision, noteDurSec);
     }
     // clickMode === "none" → no audio, visual only
 
