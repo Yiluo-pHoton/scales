@@ -848,11 +848,11 @@ function playClick(ctx, time, isDownbeat, isSubdivision, durSec) {
 
   let vol;
   if (isDownbeat) {
-    osc.frequency.value = 880; vol = 0.5;    // A5
+    osc.frequency.value = 392; vol = 0.5;     // G4
   } else if (isSubdivision) {
-    osc.frequency.value = 329.63; vol = 0.12; // E4
+    osc.frequency.value = 261.63; vol = 0.12; // C4
   } else {
-    osc.frequency.value = 392; vol = 0.3;     // G4
+    osc.frequency.value = 329.63; vol = 0.3;  // E4
   }
   // Hold level then fade out
   gain.gain.setValueAtTime(vol, time);
