@@ -511,8 +511,12 @@ function evBeams(dur, sub) {
   return Math.max(0, base - reduction);
 }
 
-// Is this a dotted value? (only for sub=4, dur=3 = dotted eighth)
-function isDotted(dur, sub) { return sub === 4 && dur === 3; }
+// Is this a dotted value? dur must be 3×2^k (e.g. 3, 6, 12) and less than full beat
+function isDotted(dur, sub) {
+  if (dur >= sub || dur % 3 !== 0) return false;
+  const undotted = dur / 3 * 2;
+  return undotted > 0 && (undotted & (undotted - 1)) === 0;
+}
 
 // Draw a rest symbol at (cx, cy)
 // Modelled after standard engraved music rests:
