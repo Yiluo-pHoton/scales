@@ -285,11 +285,11 @@
   <!-- Right settings -->
   <div class="side-settings right-settings">
     <div class="setting-group sg-bars">
-      <div class="setting-label">Bars per Figure</div>
+      <div class="setting-label">Bars per Rhythm</div>
       <div class="setting-row" id="barsRow"></div>
     </div>
     <div class="setting-group sg-click">
-      <div class="setting-label">Click Sound</div>
+      <div class="setting-label">Sound</div>
       <div class="setting-col" id="clickRow"></div>
     </div>
   </div>
@@ -680,8 +680,8 @@ function setTempo(v) {
 }
 
 tempoSlider.addEventListener("input", () => setTempo(+tempoSlider.value));
-document.getElementById("tempoMinus5").addEventListener("click", () => setTempo(tempo - 5));
-document.getElementById("tempoPlus5").addEventListener("click", () => setTempo(tempo + 5));
+document.getElementById("tempoMinus5").addEventListener("click", () => setTempo(tempo - 1));
+document.getElementById("tempoPlus5").addEventListener("click", () => setTempo(tempo + 1));
 
 // Tap tempo
 let tapTimes = [];
@@ -841,25 +841,33 @@ function playClick(ctx, time, isDownbeat, isSubdivision, durSec) {
   const gain = ctx.createGain();
   osc.connect(gain).connect(ctx.destination);
 
-  // durSec = total note duration in seconds (attack + sustain)
-  const d = durSec || 0.05;
-  const release = Math.min(0.04, d * 0.3);  // short fade-out at end
-  const sustain = Math.max(0.01, d - release);
-
   let vol;
-  if (isDownbeat) {
-    osc.frequency.value = 392; vol = 0.5;     // G4
-  } else if (isSubdivision) {
-    osc.frequency.value = 261.63; vol = 0.12; // C4
+  if (durSec) {
+    // Division mode — sustained tone reflecting note duration
+    const d = durSec;
+    const release = Math.min(0.04, d * 0.3);
+    const sustain = Math.max(0.01, d - release);
+    if (isDownbeat) {
+      osc.frequency.value = 392; vol = 0.5;     // G4
+    } else if (isSubdivision) {
+      osc.frequency.value = 261.63; vol = 0.12; // C4
+    } else {
+      osc.frequency.value = 349.23; vol = 0.3;  // F4
+    }
+    gain.gain.setValueAtTime(vol, time);
+    gain.gain.setValueAtTime(vol, time + sustain);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + sustain + release);
+    osc.start(time);
+    osc.stop(time + sustain + release + 0.01);
   } else {
-    osc.frequency.value = 329.63; vol = 0.3;  // E4
+    // Downbeat / quarter mode — short percussive click
+    osc.frequency.value = isDownbeat ? 1500 : 1000;
+    vol = isDownbeat ? 0.5 : 0.3;
+    gain.gain.setValueAtTime(vol, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+    osc.start(time);
+    osc.stop(time + 0.05);
   }
-  // Hold level then fade out
-  gain.gain.setValueAtTime(vol, time);
-  gain.gain.setValueAtTime(vol, time + sustain);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + sustain + release);
-  osc.start(time);
-  osc.stop(time + sustain + release + 0.01);
 }
 
 // ══════════════════════════════════════════
@@ -1028,9 +1036,9 @@ function scheduler() {
 
     // Schedule audio click
     if (clickMode === "downbeat" && isDownbeat) {
-      playClick(ctx, nextNoteTime, true, false, beatDuration * beatsPerBar);
+      playClick(ctx, nextNoteTime, true, false);
     } else if (clickMode === "quarter" && isBeatStart) {
-      playClick(ctx, nextNoteTime, isDownbeat, false, beatDuration);
+      playClick(ctx, nextNoteTime, isDownbeat, false);
     } else if (clickMode === "division" && isHit) {
       playClick(ctx, nextNoteTime, isDownbeat, isSubdivision, noteDurSec);
     }
