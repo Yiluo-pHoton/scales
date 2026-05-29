@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocal EQ Cheatsheet</title>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --panel: #242424;
+    --text: #e8e8e8;
+    --muted: #888;
+    --accent: #f39c12;
+    --border: #444;
+    --vowel: #3498db;
+    --fricative: #e74c3c;
+    --plosive: #2ecc71;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 960px; margin: 0 auto; padding: 20px;
+  }
+  a.nav-link {
+    font-size: 13px; color: var(--muted); text-decoration: none;
+    display: inline-block; margin-bottom: 12px;
+  }
+  a.nav-link:hover { color: var(--text); }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+
+  /* ── Frequency ruler (sticky) ── */
+  .freq-section {
+    background: var(--panel); border-radius: 10px; padding: 20px 24px;
+    margin-bottom: 24px; overflow: hidden;
+    position: sticky; top: 0; z-index: 20;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .freq-axis {
+    position: relative; height: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .freq-tick {
+    position: absolute; top: 0; transform: translateX(-50%);
+    font-size: 13px; color: var(--accent); font-weight: 700;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .freq-tick::after {
+    content: ''; display: block; width: 1px; height: 8px;
+    background: var(--accent);
+  }
+
+  /* ── EQ region boxes ── */
+  .eq-regions {
+    position: relative; margin-top: 8px;
+  }
+  .eq-row {
+    display: flex; position: relative; height: 36px; margin-bottom: 4px;
+  }
+  .eq-box {
+    position: absolute; height: 100%;
+    border: 1px solid var(--border); border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text); text-align: center;
+    padding: 2px 4px; line-height: 1.2;
+    background: rgba(255,255,255,0.03);
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .eq-box.highlight {
+    background: rgba(243,156,18,0.15);
+    border-color: var(--accent);
+  }
+  .eq-box .sub {
+    display: block; font-size: 9px; color: var(--muted); margin-top: 1px;
+  }
+
+  /* ── Vertical guide lines ── */
+  .guide-lines {
+    position: relative; height: 0; overflow: visible; z-index: 1;
+  }
+  .guide-line {
+    position: absolute; top: 0; width: 1px;
+    background: rgba(255,255,255,0.06);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* ── Formant bar sections ── */
+  .formant-section {
+    background: var(--panel); border-radius: 10px; padding: 16px 24px;
+    margin-bottom: 12px;
+  }
+  .sentence-bar {
+    background: rgba(243,156,18,0.12); border: 1px solid rgba(243,156,18,0.3);
+    border-radius: 6px; padding: 6px 14px; margin-bottom: 8px;
+    font-size: 14px; color: var(--accent); font-weight: 500;
+    text-align: center;
+  }
+  .formant-axis {
+    position: relative; height: 20px; margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .formant-tick {
+    position: absolute; bottom: 0; transform: translateX(-50%);
+    font-size: 11px; color: var(--muted); font-weight: 600;
+  }
+  .formant-tick::after {
+    content: ''; display: block; width: 1px; height: 6px;
+    background: var(--muted); margin: 0 auto;
+  }
+  .formant-row {
+    position: relative; height: 28px; margin-bottom: 4px;
+  }
+  .formant-bar {
+    position: absolute; height: 100%;
+    border: 1px solid var(--border); border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 6px; font-size: 11px; cursor: default;
+    background: rgba(255,255,255,0.03);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .formant-bar:hover {
+    background: rgba(255,255,255,0.08);
+  }
+  /* Color-coded borders by type */
+  .formant-bar[data-type="vowel"] {
+    border-color: rgba(52,152,219,0.4);
+    background: rgba(52,152,219,0.06);
+  }
+  .formant-bar[data-type="vowel"]:hover {
+    border-color: rgba(52,152,219,0.7);
+    background: rgba(52,152,219,0.12);
+  }
+  .formant-bar[data-type="fricative"] {
+    border-color: rgba(231,76,60,0.4);
+    background: rgba(231,76,60,0.06);
+  }
+  .formant-bar[data-type="fricative"]:hover {
+    border-color: rgba(231,76,60,0.7);
+    background: rgba(231,76,60,0.12);
+  }
+  .formant-bar[data-type="plosive"] {
+    border-color: rgba(46,204,113,0.4);
+    background: rgba(46,204,113,0.06);
+  }
+  .formant-bar[data-type="plosive"]:hover {
+    border-color: rgba(46,204,113,0.7);
+    background: rgba(46,204,113,0.12);
+  }
+  .formant-bar .f-label {
+    text-align: center; font-weight: 500;
+  }
+  .formant-bar .f-left {
+    position: absolute; left: 6px; font-size: 10px; color: var(--accent); font-weight: 600;
+  }
+  .formant-bar .f-right {
+    position: absolute; right: 6px; font-size: 10px; color: var(--accent); font-weight: 600;
+  }
+  .formant-bar .tooltip {
+    display: none; position: absolute; bottom: 110%; left: 50%;
+    transform: translateX(-50%); background: #333; color: var(--text);
+    padding: 4px 10px; border-radius: 4px; font-size: 11px;
+    white-space: nowrap; z-index: 10;
+    border: 1px solid var(--border);
+  }
+  .formant-bar:hover .tooltip { display: block; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; gap: 18px; margin-bottom: 16px; font-size: 12px;
+    color: var(--muted);
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .legend-swatch {
+    width: 14px; height: 14px; border-radius: 3px; border: 1px solid;
+  }
+  .legend-swatch.vowel { background: rgba(52,152,219,0.15); border-color: rgba(52,152,219,0.5); }
+  .legend-swatch.fricative { background: rgba(231,76,60,0.15); border-color: rgba(231,76,60,0.5); }
+  .legend-swatch.plosive { background: rgba(46,204,113,0.15); border-color: rgba(46,204,113,0.5); }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="nav-link">← Back</a>
+<h1>Vocal EQ Cheatsheet</h1>
+<p class="subtitle">Frequency regions, vowel formants &amp; consonant energy</p>
+
+<!-- ── Legend ── -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch vowel"></div>Vowel</div>
+  <div class="legend-item"><div class="legend-swatch fricative"></div>Fricative</div>
+  <div class="legend-item"><div class="legend-swatch plosive"></div>Plosive</div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- EQ Frequency Regions (sticky)         -->
+<!-- ══════════════════════════════════════ -->
+<div class="freq-section" id="eqSection"></div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- Formant Bars                           -->
+<!-- ══════════════════════════════════════ -->
+<div id="formantSections"></div>
+
+<script>
+// ── Log-frequency positioning ──
+const FREQ_MIN = 50;
+const FREQ_MAX = 14000;
+const KEY_FREQS = [80, 250, 500, 1500, 3000, 5000, 10000];
+
+function fPos(f) {
+  return ((Math.log(f) - Math.log(FREQ_MIN)) / (Math.log(FREQ_MAX) - Math.log(FREQ_MIN))) * 100;
+}
+
+// ── EQ region data (used for highlight cross-reference) ──
+const row1Data = [
+  { label: '"Pop"',         lo: FREQ_MIN, hi: 80 },
+  { label: 'Fundamental',   lo: 80,   hi: 250 },
+  { label: 'Box',           lo: 250,  hi: 500 },
+  { label: 'Honk',          lo: 500,  hi: 1500 },
+  { label: 'Presence',      lo: 1500, hi: 3000, sub: 'boost for front' },
+  { label: 'Articulation',  lo: 3000, hi: 5000 },
+  { label: 'Air / Breathiness', lo: 5000, hi: 10000 },
+  { label: 'Air / Cut',     lo: 10000, hi: FREQ_MAX },
+];
+const row2Data = [
+  { label: 'Nasal',            lo: 250,  hi: 500 },
+  { label: 'Vowel',            lo: 500,  hi: 1500 },
+  { label: 'Vowel',            lo: 1500, hi: 3000 },
+  { label: 'Burst Consonant',  lo: 3000, hi: 5000 },
+];
+const allRegions = [...row1Data, ...row2Data];
+
+// ══════════════════════════════════════
+// Build EQ Region Section
+// ══════════════════════════════════════
+(function buildEQ() {
+  const container = document.getElementById('eqSection');
+  const labels = ['80', '250', '500', '1.5k', '3k', '5k', '10k'];
+
+  // Frequency axis
+  let axisHTML = '<div class="freq-axis">';
+  KEY_FREQS.forEach((f, i) => {
+    axisHTML += `<div class="freq-tick" style="left:${fPos(f)}%">${labels[i]}</div>`;
+  });
+  axisHTML += '</div>';
+
+  // Guide lines (vertical) through the region boxes
+  let guideHTML = '<div class="guide-lines">';
+  KEY_FREQS.forEach(f => {
+    guideHTML += `<div class="guide-line" style="left:${fPos(f)}%;height:80px"></div>`;
+  });
+  guideHTML += '</div>';
+
+  // Region rows
+  function makeRow(regions) {
+    let html = '<div class="eq-row">';
+    regions.forEach((r, i) => {
+      const left = fPos(r.lo);
+      const right = fPos(r.hi);
+      const width = right - left;
+      const subHTML = r.sub ? `<span class="sub">${r.sub}</span>` : '';
+      html += `<div class="eq-box" data-lo="${r.lo}" data-hi="${r.hi}" style="left:${left}%;width:${width}%">${r.label}${subHTML}</div>`;
+    });
+    html += '</div>';
+    return html;
+  }
+
+  container.innerHTML = axisHTML
+    + '<div class="eq-regions">'
+    + guideHTML
+    + makeRow(row1Data)
+    + makeRow(row2Data)
+    + '</div>';
+})();
+
+// ══════════════════════════════════════
+// Formant Bar Sections
+// ══════════════════════════════════════
+const sections = [
+  {
+    sentence: 'moon, call, star, please',
+    axisRange: [200, 3000],
+    ticks: [200, 300, 500, 800, 1000, 1500, 2000, 3000],
+    items: [
+      { word: '/uː/ "oo"', f1: 300, f2: 870,  tip: '/uː/ — close back rounded', type: 'vowel' },
+      { word: '/ɑː/ "ah"', f1: 750, f2: 1220, tip: '/ɑː/ — open back unrounded', type: 'vowel' },
+      { word: '/ɔː/ "aw"', f1: 570, f2: 840,  tip: '/ɔː/ — open-mid back rounded', type: 'vowel' },
+      { word: '/iː/ "ee"', f1: 270, f2: 2290, tip: '/iː/ — close front unrounded', type: 'vowel' },
+    ]
+  },
+  {
+    sentence: 'Counting',
+    axisRange: [200, 3000],
+    ticks: [200, 300, 500, 800, 1000, 1500, 2000, 3000],
+    items: [
+      { word: 'one',   f1: 640, f2: 1190, tip: '/ʌ/ (uh)', type: 'vowel' },
+      { word: 'two',   f1: 300, f2: 870,  tip: '/uː/ (oo)', type: 'vowel' },
+      { word: 'three', f1: 270, f2: 2290, tip: '/iː/ (ee)', type: 'vowel' },
+      { word: 'four',  f1: 570, f2: 840,  tip: '/ɔː/ (aw)', type: 'vowel' },
+      { word: 'six',   f1: 390, f2: 1990, tip: '/ɪ/ (ih)', type: 'vowel' },
+      { word: 'seven', f1: 530, f2: 1840, tip: '/ɛ/ (eh)', type: 'vowel' },
+      { word: 'ten',   f1: 530, f2: 1840, tip: '/ɛ/ (eh)', type: 'vowel' },
+    ]
+  },
+  {
+    sentence: 'She sells seashells by the seashore',
+    axisRange: [1500, 10000],
+    ticks: [1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000],
+    items: [
+      { word: '/ʃ/ "sh"', f1: 2000, f2: 4000, tip: '/ʃ/ — voiceless postalveolar fricative', type: 'fricative' },
+      { word: '/s/ "s"',   f1: 5000, f2: 8000, tip: '/s/ — voiceless alveolar fricative', type: 'fricative' },
+    ]
+  },
+  {
+    sentence: 'Peter Piper picked a peck of pickled peppers',
+    axisRange: [300, 2000],
+    ticks: [300, 500, 800, 1000, 1500, 2000],
+    items: [
+      { word: '/p/',  f1: 500, f2: 1500, tip: '/p/ — voiceless bilabial plosive', type: 'plosive' },
+    ]
+  },
+];
+
+(function buildFormants() {
+  const container = document.getElementById('formantSections');
+  let html = '';
+
+  sections.forEach(sec => {
+    const lo = sec.axisRange[0], hi = sec.axisRange[1];
+    const pos = f => ((Math.log(f) - Math.log(lo)) / (Math.log(hi) - Math.log(lo))) * 100;
+
+    html += '<div class="formant-section">';
+    html += `<div class="sentence-bar">${sec.sentence}</div>`;
+
+    // Mini axis
+    html += '<div class="formant-axis">';
+    sec.ticks.forEach(t => {
+      const p = pos(t);
+      if (p >= 0 && p <= 100) {
+        const label = t >= 1000 ? (t/1000) + 'k' : t;
+        html += `<div class="formant-tick" style="left:${p}%">${label}</div>`;
+      }
+    });
+    html += '</div>';
+
+    // Bars
+    sec.items.forEach(item => {
+      const left = pos(item.f1);
+      const width = pos(item.f2) - left;
+      html += '<div class="formant-row">';
+      html += `<div class="formant-bar" data-type="${item.type}" data-f1="${item.f1}" data-f2="${item.f2}" style="left:${left}%;width:${width}%">`;
+      html += `<span class="f-left">${item.f1}</span>`;
+      html += `<span class="f-label">${item.word}</span>`;
+      html += `<span class="f-right">${item.f2}</span>`;
+      html += `<span class="tooltip">${item.tip}</span>`;
+      html += '</div></div>';
+    });
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+
+  // ── Hover cross-reference: highlight EQ regions ──
+  const eqBoxes = document.querySelectorAll('.eq-box');
+  document.querySelectorAll('.formant-bar').forEach(bar => {
+    bar.addEventListener('mouseenter', () => {
+      const f1 = +bar.dataset.f1, f2 = +bar.dataset.f2;
+      eqBoxes.forEach(box => {
+        const lo = +box.dataset.lo, hi = +box.dataset.hi;
+        // Overlaps if bar range intersects region range
+        if (f1 < hi && f2 > lo) {
+          box.classList.add('highlight');
+        }
+      });
+    });
+    bar.addEventListener('mouseleave', () => {
+      eqBoxes.forEach(box => box.classList.remove('highlight'));
+    });
+  });
+})();
+</script>
+</body>
+</html>
