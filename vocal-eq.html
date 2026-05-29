@@ -180,6 +180,27 @@
   .legend-swatch.vowel { background: rgba(52,152,219,0.15); border-color: rgba(52,152,219,0.5); }
   .legend-swatch.fricative { background: rgba(231,76,60,0.15); border-color: rgba(231,76,60,0.5); }
   .legend-swatch.plosive { background: rgba(46,204,113,0.15); border-color: rgba(46,204,113,0.5); }
+
+  /* ── Mobile responsive ── */
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    .freq-section { padding: 12px 10px; }
+    .formant-section { padding: 12px 10px; }
+    .freq-tick { font-size: 10px; }
+    .eq-box {
+      font-size: 8px; padding: 1px 2px;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
+    .eq-box .sub { display: none; }
+    .formant-bar { padding: 0 3px; font-size: 9px; }
+    .formant-bar .f-left,
+    .formant-bar .f-right { display: none; }
+    .formant-bar .f-label { font-size: 9px; }
+    .formant-row { height: 24px; margin-bottom: 3px; }
+    .formant-tick { font-size: 9px; }
+    .sentence-bar { font-size: 11px; padding: 5px 8px; }
+    .legend { font-size: 10px; gap: 10px; }
+  }
 </style>
 </head>
 <body>
