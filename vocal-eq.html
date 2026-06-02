@@ -181,25 +181,43 @@
   .legend-swatch.fricative { background: rgba(231,76,60,0.15); border-color: rgba(231,76,60,0.5); }
   .legend-swatch.plosive { background: rgba(46,204,113,0.15); border-color: rgba(46,204,113,0.5); }
 
-  /* ── Mobile responsive ── */
+  /* ── Mobile: vertical list layout ── */
   @media (max-width: 600px) {
     body { padding: 12px; }
-    .freq-section { padding: 12px 10px; }
-    .formant-section { padding: 12px 10px; }
-    .freq-tick { font-size: 10px; }
-    .eq-box {
-      font-size: 8px; padding: 1px 2px;
-      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-    }
-    .eq-box .sub { display: none; }
-    .formant-bar { padding: 0 3px; font-size: 9px; }
-    .formant-bar .f-left { font-size: 7px; left: 2px; }
-    .formant-bar .f-right { font-size: 7px; right: 2px; }
-    .formant-bar .f-label { font-size: 9px; }
-    .formant-row { height: 24px; margin-bottom: 3px; }
-    .formant-tick { font-size: 9px; }
-    .sentence-bar { font-size: 11px; padding: 5px 8px; }
+    .freq-section { position: static; box-shadow: none; padding: 14px; }
+    .freq-axis, .guide-lines, .eq-regions { display: none; }
+    .formant-section { padding: 14px; }
+    .sentence-bar { font-size: 12px; padding: 5px 10px; }
+    .formant-axis { display: none; }
+    .formant-row { display: none; }
     .legend { font-size: 10px; gap: 10px; }
+    /* Mobile-specific list elements */
+    .eq-list { display: flex; flex-direction: column; gap: 6px; }
+    .eq-list-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; border-radius: 6px;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+    }
+    .eq-list-item .eq-name { font-size: 13px; font-weight: 500; }
+    .eq-list-item .eq-range { font-size: 12px; color: var(--accent); font-weight: 600; }
+    .eq-list-item .eq-sub { font-size: 10px; color: var(--muted); margin-left: 6px; }
+    .formant-list { display: flex; flex-direction: column; gap: 5px; }
+    .formant-list-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 12px; border-radius: 6px;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+    }
+    .formant-list-item[data-type="vowel"] { border-color: rgba(52,152,219,0.4); background: rgba(52,152,219,0.06); }
+    .formant-list-item[data-type="fricative"] { border-color: rgba(231,76,60,0.4); background: rgba(231,76,60,0.06); }
+    .formant-list-item[data-type="plosive"] { border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.06); }
+    .formant-list-item .fl-name { font-size: 13px; font-weight: 500; }
+    .formant-list-item .fl-range { font-size: 12px; color: var(--accent); font-weight: 600; }
+    .formant-list-item .fl-tip { font-size: 10px; color: var(--muted); }
+  }
+  /* Hide mobile lists on desktop */
+  .eq-list, .formant-list { display: none; }
+  @media (max-width: 600px) {
+    .eq-list, .formant-list { display: flex; }
   }
 </style>
 </head>
@@ -290,12 +308,26 @@ const allRegions = [...row1Data, ...row2Data];
     return html;
   }
 
+  // Mobile list
+  function fmtFreq(f) { return f >= 1000 ? (f/1000) + 'k' : f; }
+  let listHTML = '<div class="eq-list">';
+  row1Data.forEach(r => {
+    const subHTML = r.sub ? `<span class="eq-sub">(${r.sub})</span>` : '';
+    listHTML += `<div class="eq-list-item"><span class="eq-name">${r.label} ${subHTML}</span><span class="eq-range">${fmtFreq(r.lo)} – ${fmtFreq(r.hi)}</span></div>`;
+  });
+  listHTML += '<div style="border-top:1px solid var(--border);margin:4px 0"></div>';
+  row2Data.forEach(r => {
+    listHTML += `<div class="eq-list-item"><span class="eq-name">${r.label}</span><span class="eq-range">${fmtFreq(r.lo)} – ${fmtFreq(r.hi)}</span></div>`;
+  });
+  listHTML += '</div>';
+
   container.innerHTML = axisHTML
     + '<div class="eq-regions">'
     + guideHTML
     + makeRow(row1Data)
     + makeRow(row2Data)
-    + '</div>';
+    + '</div>'
+    + listHTML;
 })();
 
 // ══════════════════════════════════════
@@ -338,10 +370,11 @@ const sections = [
   },
   {
     sentence: 'Peter Piper picked a peck of pickled peppers',
-    axisRange: [300, 2000],
-    ticks: [300, 500, 800, 1000, 1500, 2000],
+    axisRange: [300, 6000],
+    ticks: [300, 500, 1000, 1500, 2000, 3000, 4000, 5000, 6000],
     items: [
-      { word: '/p/',  f1: 500, f2: 1500, tip: '/p/ — voiceless bilabial plosive', type: 'plosive' },
+      { word: '/p/ burst', f1: 500, f2: 1500, tip: '/p/ — low-frequency burst energy', type: 'plosive' },
+      { word: '/p/ noise', f1: 3000, f2: 5000, tip: '/p/ — high-intensity release noise', type: 'plosive' },
     ]
   },
 ];
@@ -368,7 +401,7 @@ const sections = [
     });
     html += '</div>';
 
-    // Bars
+    // Desktop bars
     sec.items.forEach(item => {
       const left = pos(item.f1);
       const width = pos(item.f2) - left;
@@ -380,6 +413,16 @@ const sections = [
       html += `<span class="tooltip">${item.tip}</span>`;
       html += '</div></div>';
     });
+
+    // Mobile list
+    html += '<div class="formant-list">';
+    sec.items.forEach(item => {
+      html += `<div class="formant-list-item" data-type="${item.type}">`;
+      html += `<span class="fl-name">${item.word}<br><span class="fl-tip">${item.tip}</span></span>`;
+      html += `<span class="fl-range">${item.f1} – ${item.f2}</span>`;
+      html += '</div>';
+    });
+    html += '</div>';
 
     html += '</div>';
   });
